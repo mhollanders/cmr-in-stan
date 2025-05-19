@@ -1,0 +1,244 @@
+---
+title: Simulation-based calibration of capture-mark-recapture models in Stan
+format: 
+  pdf:
+    toc: true
+execute:
+  warning: false
+  message: false
+  fig-asp: 1.3
+abstract: |
+  In this document we run simulation-based calibration (SBC) for each model described in the manuscript. We assess calibration through ECDF-diff plots and visually inspect parameter estimates alongside their true values. The simulation script is printed at the end of this document.
+---
+
+\newpage
+
+# Introduction
+
+We use simulation-based calibration (SBC) to assess whether our Stan programs correctly reflect our data-generating processes. Briefly, SBC works by simulating prior predictive datasets, estimating the parameters for each of these datasets using the model, and then assessing the ranks of the simulated values within the posterior draws. If the model reflects our data-generating process, then the ranks are uniformly distributed, which we assess with the `SBC::plot_ecdf_diff()` function. If our model is calibrated, then the black squiggly lines should fall within the blue ellipses. We also plot the parameter estimates alongside their input to visually assess parameter recovery.
+
+In all models, we simulate constant state-specific mortality hazard rates and time-varying state-specific detection probabilities. Survey intervals are simulated as unequal which are accounted for in the entry and ecological processes. In multistate models, constant state-to-state specific transition rates are simulated. In Jolly-Seber models, time-varying entry probabilities are simulated with an offset for survey interval. In multistate Jolly-Seber moels, the probabilities of entering in each state are modeled as time-varying.
+
+First we load packages and scripts and set the parameters for simulation and estimation.
+
+```{r}
+options(digits = 3)
+library(SBC)
+library(cmdstanr)
+library(here)
+library(tidyverse)
+source(here("sbc/util.R"))
+source(here("sbc/simulate-cmr.R"))
+theme_set(my_theme(base_size = 6))
+N_super <- 200 ; J <- 6 ; K <- 2 ; S <- 3 ; n_sims <- 100
+chains <- 8 ; iter_warmup <- 200 ; iter_sampling <- 500
+```
+
+\newpage
+
+# Cormack-Jolly-Seber
+
+## Single survey
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/cjs.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+```{r}
+#| fig-asp: 0.8
+
+plot_sbc(sbc, nrow = 2)
+```
+
+\newpage
+
+## Robust design
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J, 
+                                   K = K) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/cjs-rd.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+```{r}
+#| fig-asp: 0.8
+
+plot_sbc(sbc, nrow = 2)
+```
+
+\newpage
+
+# Multistate Cormack-Jolly-Seber
+
+## Single survey
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J, 
+                                   S = S) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/cjs-ms.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+::: {.callout-warning}
+Single-survey multistate models with state-specific detection probabilities suffer from parameter identifiability issues in that they are confounded with the transition rates (see [Hollanders & Royle 2022](https://doi.org/10.1111/2041-210X.13993)). Notice the difference in parameter estimates with the robust design version.
+:::
+
+\newpage
+
+```{r}
+plot_sbc(sbc, c(str_c("h[", 1:S, "]"),
+                str_c("q[", 1:(S * (S - 1)), "]")))
+plot_sbc(sbc, 
+         flatten_chr(map(1:S, ~(str_c("p[", .x, ",", 1:(J - 1), "]")))),
+         ncol = J - 1)
+```
+
+\newpage
+
+## Robust design
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J, 
+                                   K = K, 
+                                   S = S) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/cjs-ms-rd.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+\newpage
+
+```{r}
+plot_sbc(sbc, c(str_c("h[", 1:S, "]"),
+                str_c("q[", 1:(S * (S - 1)), "]")))
+plot_sbc(sbc, 
+         flatten_chr(map(1:S, ~(str_c("p[", .x, ",", 1:J, "]")))),
+         ncol = J)
+```
+
+\newpage
+
+# Jolly-Seber
+
+## Single survey
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J,
+                                   JS = T) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/js.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+```{r}
+#| fig-asp: 0.7
+
+plot_sbc(sbc, c("h", "mu", "N_super"))
+```
+
+\newpage
+
+```{r}
+plot_sbc(sbc, 
+         flatten_chr(map(c("beta", "p"), ~(str_c(., "[", 1:J, "]")))),
+         ncol = J)
+plot_sbc(sbc, 
+         flatten_chr(map(c("N", "B", "D"), ~(str_c(., "[", 1:J, "]")))),
+         ncol = J)
+```
+
+\newpage
+
+## Robust design
+
+```{r}
+datasets <- SBC_generator_function(simulate_cmr, 
+                                   N_super = N_super, 
+                                   J = J,
+                                   K = K, 
+                                   JS = T) |> 
+  generate_datasets(n_sims)
+backend <- SBC_backend_cmdstan_sample(cmdstan_model(here("stan/js-rd.stan")),
+                                      chains = chains,
+                                      iter_warmup = iter_warmup,
+                                      iter_sampling = iter_sampling)
+sbc <- compute_SBC(datasets, backend, cores_per_fit = chains, keep_fits = F)
+```
+
+Mean time for the slowest of `r chains` chains with `r iter_warmup + iter_sampling` iterations: `r mean(sbc$backend_diagnostics$max_chain_time) / 60` minutes.
+
+```{r}
+#| fig-asp: 0.8
+
+plot_sbc(sbc, c("h", "mu", "N_super"))
+```
+
+\newpage
+
+```{r}
+plot_sbc(sbc, 
+         flatten_chr(map(c("beta", "p"), ~(str_c(., "[", 1:J, "]")))),
+         ncol = J)
+plot_sbc(sbc, 
+         flatten_chr(map(c("N", "B", "D"), ~(str_c(., "[", 1:J, "]")))),
+         ncol = J)
+```
+
+\newpage
+
+# Simulation script
+
+```{r}
+#| echo: false
+#| results: "asis"
+
+cat("```r\n", 
+    paste(readLines(here("sbc/simulate-cmr.R")), 
+          collapse = "\n"), 
+    "\n```")
+```
+
+\newpage
+
+# References

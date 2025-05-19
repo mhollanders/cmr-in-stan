@@ -1,0 +1,687 @@
+/** 
+ * Jolly-Seber individual log likelihoods and marginal log likelihoods of entry
+ * occasions for observed individuals, and log likelihoods associated with
+ * unseen augmented individual(s). Function is overloaded (first is much faster 
+ * without individual effects):
+ *  1. h and logit_p per survey with one augmented log likelihood computation
+ *  2. h and logit_p per individual and survey with log likelihood computations
+ *     for each augmented individual
+ * 
+ * @param y         Detection history
+ * @param f_l       First and last survey detected
+ * @param psi       Inclusion probability
+ * @param log_beta  Log entry probabilities
+ * @param log_phi   Log survival probabilities
+ * @param logit_p   Detection logits
+ *
+ * @return log_lik   Individual log likelihoods of observed
+ * @return log_lik0  Inclusion state log likelihoods of augmented
+ * @return lp_b      Marginal entry log likelihoods of observed
+ * @return lp_b0     Marginal entry log likelihoods of augmented
+ */
+tuple(vector, vector, matrix, vector) 
+  js(data array[,] int y, data array[,] int f_l, real psi, vector log_beta, 
+     vector log_phi, vector logit_p) {
+  int I = size(y), J = size(y[1]), Jm1 = J - 1;
+  real log_psi = log(psi), log1m_psi = log1m(psi);
+  vector[J] log1m_p = log1m_inv_logit(logit_p);
+  vector[Jm1] rev_log_1mp_phi = reverse(log1m_p[:Jm1] + log_phi),
+              log_phi_1mp = log_phi + log1m_p[2:], 
+              chi;
+  matrix[Jm1, J] entered_not_detected;
+  matrix[J, Jm1] alive_not_detected;
+  for (j in 1:Jm1) {
+    int jp1 = j + 1;
+    entered_not_detected[:j, jp1] = 
+      reverse(cumulative_sum(tail(rev_log_1mp_phi, j)));
+    alive_not_detected[jp1:, j] = cumulative_sum(log_phi_1mp[j:]);
+    chi[j] = log1m_exp(log_sum_exp(alive_not_detected[jp1:, j]
+                                   + logit_p[jp1:]));
+  }
+  matrix[J, I] lp_b;
+  vector[I] log_lik = rep_vector(log_psi, I);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2];
+    lp_b[:f, i] = log_beta[:f] + log1m_p[f] + logit_p[f];
+    if (f > 1) {
+      int fm1 = f - 1;
+      lp_b[:fm1, i] += entered_not_detected[:fm1, f];
+    }
+    log_lik[i] += log_sum_exp(lp_b[:f, i]);
+    if (f < l) {
+      int fp1 = f + 1;
+      log_lik[i] += alive_not_detected[l, f]
+                    + dot_product(to_vector(y[i, fp1:l]), logit_p[fp1:l]);
+    }
+    if (l < J) {
+      log_lik[i] += chi[l];
+    }
+  }
+  vector[J] lp_b0 = log_beta + log1m_p;
+  lp_b0[1:Jm1] += chi;
+  vector[2] log_lik0 = [ log1m_psi, log_psi + log_sum_exp(lp_b0) ]';
+  return (log_lik, log_lik0, lp_b, lp_b0);
+}
+
+tuple(vector, matrix, matrix, matrix) 
+  js(data array[,] int y, data array[,] int f_l, real psi, vector log_beta, 
+     matrix log_phi, matrix logit_p) {
+  int I = size(y), I_all = cols(log_phi), I_aug = I_all - I, J = size(y[1]),
+      Jm1 = J - 1;
+  real log_psi = log(psi), log1m_psi = log1m(psi);
+  matrix[J, I_all] log1m_p = log1m_inv_logit(logit_p);
+  matrix[J, I] lp_b;
+  vector[I] log_lik = rep_vector(log_psi, I);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2];
+    lp_b[:f, i] = log_beta[:f] + log1m_p[f, i] + logit_p[f, i];
+    if (f > 1) {
+      int fm1 = f - 1;
+      lp_b[:fm1, i] += reverse(cumulative_sum(reverse(log_phi[:fm1, i] 
+                                                      + log1m_p[:fm1, i])));
+    }
+    log_lik[i] += log_sum_exp(lp_b[:f, i]);
+    if (f < l) {
+      int fp1 = f + 1;
+      log_lik[i] += sum(log_phi[f:l - 1, i] + log1m_p[fp1:l, i]
+                        + to_vector(y[i, fp1:l]) .* logit_p[fp1:l, i]);
+    }
+    if (l < J) {
+      int lp1 = l + 1;
+      log_lik[i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi[l:, i] 
+                                                         + log1m_p[lp1:, i])
+                                          + logit_p[lp1:, i]));
+    }
+  }
+  int Ip1 = I + 1;
+  matrix[Jm1, I_aug] log_phi_1mp = log_phi[:, Ip1:] + log1m_p[2:, Ip1:];
+  matrix[J, I_aug] lp_b0 = rep_matrix(log_beta, I_aug) + log1m_p[:, Ip1:];
+  matrix[2, I_aug] log_lik0 = rep_matrix([ log1m_psi, log_psi ]', I_aug);
+  for (i in 1:I_aug) {
+    int ii = I + i;
+    for (b in 1:Jm1) {
+      lp_b0[b, i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi_1mp[b:, i])
+                                            + logit_p[b + 1:, ii]));
+    }
+    log_lik0[2, i] += log_sum_exp(lp_b0[:, i]);
+  }
+  return (log_lik, log_lik0, lp_b, lp_b0);
+}
+
+/** 
+ * Jolly-Seber population sizes, number of entries and exits, and 
+ * super-population using the forward-backward sampling algorithm. Function is 
+ * overloaded:
+ *  1. h and logit_p per survey (requires I_aug as input)
+ *  2. h and logit_p per individual and survey
+ * 
+ * @param lp       Output of js()
+ * @param f_l      First and last survey detected
+ * @param I_aug    Number of augmented individuals
+ * @param log_phi  Log survival probabilities
+ * @param logit_p  Detection logits
+ 
+ * @return N        Population size per survey
+ * @return B        Number of entries per survey
+ * @return D        Number of exits per survey
+ * @return N_super  Super-population
+ */
+tuple(array[] int, array[] int, array[] int, int) 
+  js_rng(tuple(vector, vector, matrix, vector) lp, data array[,] int f_l, 
+         data int I_aug, vector log_phi, vector logit_p) {
+  int I = size(lp.1), J = rows(lp.3), Jm1 = J - 1;
+  vector[Jm1] log1m_phi = log1m_exp(log_phi);
+  vector[J] log1m_p = log1m_inv_logit(logit_p);
+  array[Jm1] matrix[2, 2] P;
+  for (j in 1:Jm1) {
+    P[j] = [[ log_phi[j], log1m_phi[j] ],
+            [ negative_infinity(), 0 ]];
+  }
+  array[Jm1] matrix[2, J] Omega;
+  for (j in 1:Jm1) {
+    int jp1 = j + 1;
+    Omega[j, :, jp1] = P[j, 1]';
+    Omega[j, 1, jp1] += log1m_p[jp1];
+    for (jj in jp1 + 1:J) {
+      int jjm1 = jj - 1;
+      Omega[j, :, jj] = log_prod_exp(P[jjm1]', Omega[j, :, jjm1]);
+      Omega[j, 1, jj] += log1m_p[jj];
+    }
+  }
+  array[J] int N = zeros_int_array(J), 
+               B = zeros_int_array(J), 
+               D = zeros_int_array(J);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2], last_alive = l;
+    if (last_alive < J) {
+      int z = latent_rng(Omega[l, :, J]);
+      if (z == 1) {
+        last_alive = J;
+      } else {
+        if (l < Jm1) {
+          int JJ = Jm1 - l;
+          array[JJ] int idx = linspaced_int_array(JJ, l + 1, Jm1);
+          for (j in reverse(idx)) {
+            z = latent_rng(Omega[l, :, j] + P[j, :, 2]);
+            if (z == 1) {
+              last_alive = j;
+              break;
+            }
+          }
+        }
+      }
+    }
+    int b = latent_rng(lp.3[:f, i]);
+    B[b] += 1;
+    for (j in b:last_alive) {
+      N[j] += 1;
+    }
+    if (last_alive < J) {
+      D[last_alive + 1] += 1;
+    }
+  }
+  int N_super = I;
+  for (i in 1:I_aug) {
+    int w = latent_rng(lp.2) - 1;
+    if (w) {
+      N_super += 1;
+      int b = latent_rng(lp.4), last_alive = b;
+      if (b < J) {
+        int z = latent_rng(Omega[b, :, J]);
+        if (z == 1) {
+          last_alive = J;
+        } else {
+          if (b < Jm1) {
+            int JJ = Jm1 - b;
+            array[JJ] int idx = linspaced_int_array(JJ, b + 1, Jm1);
+            for (j in reverse(idx)) {
+              z = latent_rng(Omega[b, :, j] + P[j, :, 2]);
+              if (z == 1) {
+                last_alive = j;
+                break;
+              }
+            }
+          }
+        }
+      }
+      B[b] += 1;
+      for (j in b:last_alive) {
+        N[j] += 1;
+      }
+      if (last_alive < J) {
+        D[last_alive + 1] += 1;
+      }
+    }
+  }
+  if (N_super == I + I_aug) {
+    print("N_super == I + I_aug. Increase I_aug and try again.");
+  }
+  return (N, B, D, N_super);
+}
+
+tuple(array[] int, array[] int, array[] int, int) 
+  js_rng(tuple(vector, matrix, matrix, matrix) lp, data array[,] int f_l, 
+         matrix log_phi, matrix logit_p) {
+  int I = size(lp.1), I_aug = cols(lp.2), J = rows(lp.3), Jm1 = J - 1, 
+      I_all = I + I_aug;
+  vector[Jm1] log1m_phi;
+  vector[J] log1m_p;
+  matrix[2, 2] P;
+  P[2] = [ negative_infinity(), 0 ];
+  matrix[2, J] Omega;
+  array[J] int N = zeros_int_array(J), 
+               B = zeros_int_array(J), 
+               D = zeros_int_array(J);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2], last_alive = l;
+    if (l < J) {
+      int lp1 = l + 1;
+      log1m_phi[l:] = log1m_exp(log_phi[l:, i]);
+      log1m_p[lp1:] = log1m_inv_logit(logit_p[lp1:, i]);
+      Omega[:, lp1] = [ log_phi[l, i] + log1m_p[lp1], 
+                        log1m_phi[l] ]';
+      for (j in lp1 + 1:J) {
+        int jm1 = j - 1;
+        P[1] = [ log_phi[jm1, i], log1m_phi[jm1] ];
+        Omega[:, j] = log_prod_exp(P', Omega[:, jm1]);
+        Omega[1, j] += log1m_p[j];
+      }
+      int z = latent_rng(Omega[:, J]);
+      if (z == 1) {
+        last_alive = J;
+      } else {
+        if (l < Jm1) {
+          int JJ = Jm1 - l;
+          array[JJ] int idx = linspaced_int_array(JJ, lp1, Jm1);
+          for (j in reverse(idx)) {
+            Omega[1, j] += log1m_phi[j];
+            z = latent_rng(Omega[:, j]);
+            if (z == 1) {
+              last_alive = j;
+              break;
+            }
+          }
+        }
+      }
+    }
+    int b = latent_rng(lp.3[:f, i]);
+    B[b] += 1;
+    for (j in b:last_alive) {
+      N[j] += 1;
+    }
+    if (last_alive < J) {
+      D[last_alive + 1] += 1;
+    }
+  }
+  int N_super = I;
+  for (i in 1:I_aug) {
+    int w = latent_rng(lp.2[:, i]) - 1;
+    if (w) {
+      N_super += 1;
+      int b = latent_rng(lp.4[:, i]), last_alive = b;
+      if (b < J) {
+        int ii = I + i, bp1 = b + 1;
+        log1m_phi[b:] = log1m_exp(log_phi[b:, ii]);
+        log1m_p[bp1:] = log_inv_logit(logit_p[bp1:, ii]);
+        Omega[:, bp1] = [ log_phi[b, ii] + log1m_p[bp1], 
+                          log1m_phi[b] ]';
+        for (j in bp1 + 1:J) {
+          int jm1 = j - 1;
+          P[1] = [ log_phi[jm1, ii], log1m_phi[jm1] ];
+          Omega[:, j] = log_prod_exp(P', Omega[:, jm1]);
+          Omega[1, j] += log1m_p[j];
+        }
+        int z = latent_rng(Omega[:, J]);
+        if (z == 1) {
+          last_alive = J;
+        } else {
+          if (b < Jm1) {
+            int JJ = Jm1 - b;
+            array[JJ] int idx = linspaced_int_array(JJ, bp1, Jm1);
+            for (j in reverse(idx)) {
+              Omega[1, j] += log1m_phi[j];
+              z = latent_rng(Omega[:, j]);
+              if (z == 1) {
+                last_alive = j;
+                break;
+              }
+            }
+          }
+        }
+      }
+      B[b] += 1;
+      for (j in b:last_alive) {
+        N[j] += 1;
+      }
+      if (last_alive < J) {
+        D[last_alive + 1] += 1;
+      }
+    }
+  }
+  if (N_super == I_all) {
+    print("N_super == I + I_aug. Increase I_aug and try again.");
+  }
+  return (N, B, D, N_super);
+}
+
+/** 
+ * Robust design Jolly-Seber individual log likelihoods and marginal log 
+ * likelihoods of entry occasions for observed individuals, and log likelihoods
+ * associated with unseen augmented individual(s). Function is overloaded 
+ * (first is much faster without individual effects):
+ *  1. h and logit_p per survey/secondary with one augmented log likelihood 
+ *     computation
+ *  2. h and logit_p per individual and survey/secondary with log likelihood 
+ *     computations for each augmented individual
+ * 
+ * @param y         Detection history
+ * @param f_l       First and last survey detected
+ * @param K         Number of secondaries per survey
+ * @param psi       Inclusion probability
+ * @param log_beta  Log entry probabilities
+ * @param log_phi   Log survival probabilities
+ * @param logit_p   Detection logits
+ *
+ * @return log_lik   Individual log likelihoods of observed
+ * @return log_lik0  Inclusion state log likelihoods of augmented
+ * @return lp_b      Marginal entry log likelihoods of observed
+ * @return lp_b0     Marginal entry log likelihoods of augmented
+ */
+tuple(vector, vector, matrix, vector) 
+  js_rd(data array[,,] int y, data array[,] int f_l, data array[] int K, 
+        real psi, vector log_beta, vector log_phi, matrix logit_p) {
+  int I = size(y), J = size(y[1]), Jm1 = J - 1, K_max = max(K);
+  real log_psi = log(psi), log1m_psi = log1m(psi);
+  matrix[K_max, J] log1m_p = log1m_inv_logit(logit_p);
+  vector[J] log1m_P, log_P;
+  for (j in 1:J) {
+    log1m_P[j] = sum(log1m_p[1:K[j], j]);
+  }
+  log_P = log1m_exp(log1m_P);
+  vector[Jm1] rev_log_1mP_phi = reverse(log1m_P[:Jm1] + log_phi),
+              log_phi_1mP = log_phi + log1m_P[2:], 
+              chi;
+  matrix[Jm1, J] entered_not_detected;
+  matrix[J, Jm1] alive_not_detected;
+  for (j in 1:Jm1) {
+    int jp1 = j + 1;
+    entered_not_detected[:j, jp1] = 
+      reverse(cumulative_sum(tail(rev_log_1mP_phi, j)));
+    alive_not_detected[jp1:, j] = cumulative_sum(log_phi_1mP[j:]);
+    chi[j] = log1m_exp(log_sum_exp(alive_not_detected[jp1:, j]
+                                   - log1m_P[jp1:] + log_P[jp1:]));
+  }
+  matrix[J, I] lp_b;
+  vector[I] log_lik = rep_vector(log_psi, I);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2];
+    lp_b[:f, i] = log_beta[:f] + log1m_P[f] 
+                  + dot_product(to_vector(y[i, f]), logit_p[:, f]);
+    if (f > 1) {
+      int fm1 = f - 1;
+      lp_b[:fm1, i] += entered_not_detected[:fm1, f];
+    }
+    log_lik[i] += log_sum_exp(lp_b[:f, i]);
+    if (f < l) {
+      int fp1 = f + 1;
+      log_lik[i] += alive_not_detected[l, f]
+                    + sum(rows_dot_product(to_matrix(y[i, fp1:l])',
+                                           logit_p[:, fp1:l]));
+    }
+    if (l < J) {
+      log_lik[i] += chi[l];
+    }
+  }
+  vector[J] lp_b0 = log_beta + log1m_P;
+  lp_b0[:Jm1] += chi;
+  vector[2] log_lik0 = [ log1m_psi, log_psi + log_sum_exp(lp_b0) ]';
+  return (log_lik, log_lik0, lp_b, lp_b0);
+}
+
+tuple(vector, matrix, matrix, matrix) 
+  js_rd(data array[,,] int y, data array[,] int f_l, data array[] int K, 
+        real psi, vector log_beta, matrix log_phi, array[] matrix logit_p) {
+  int I = size(y), I_all = cols(log_phi), I_aug = I_all - I, J = size(y[1]), 
+      Jm1 = J - 1, K_max = max(K);
+  real log_psi = log(psi), log1m_psi = log1m(psi);
+  array[I_all] matrix[K_max, J] log1m_p = log1m_inv_logit(logit_p);
+  vector[J] log1m_P;
+  vector[Jm1] log_phi_1mP;
+  matrix[J, I] lp_b = rep_matrix(log_beta, I);
+  vector[I] log_lik = rep_vector(log_psi, I);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2];
+    for (j in f:J) {
+      log1m_P[j] = sum(log1m_p[i, 1:K[j], j]);
+    }
+    lp_b[:f, i] = log_beta[:f] + log1m_P[f] 
+                  + dot_product(to_vector(y[i, f]), logit_p[i, :, f]);
+    if (f > 1) {
+      int fm1 = f - 1;
+      lp_b[:fm1, i] += reverse(cumulative_sum(reverse(log_phi[:fm1, i] 
+                                                      + log1m_P[:fm1])));
+    }
+    log_lik[i] += log_sum_exp(lp_b[:f, i]);
+    if (f < J) {
+      int fp1 = f + 1;
+      log_phi_1mP[f:] = log_phi[f:, i] + log1m_P[fp1:];
+      if (f < l) {
+        log_lik[i] += sum(log_phi_1mP[f:l - 1])
+                      + sum(rows_dot_product(to_matrix(y[i, fp1:l])',
+                                             logit_p[i, :, fp1:l]));
+      }
+      if (l < J) {
+        int lp1 = l + 1;
+        log_lik[i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi_1mP[l:])
+                                            - log1m_P[lp1:] 
+                                            + log1m_exp(log1m_P[lp1:])));
+       }
+    }
+  }
+  matrix[J, I_aug] lp_b0 = rep_matrix(log_beta, I_aug);
+  matrix[2, I_aug] log_lik0 = rep_matrix([ log1m_psi, log_psi ]', I_aug);
+  for (i in 1:I_aug) {
+    int ii = I + i;
+    for (j in 1:J) {
+      log1m_P[j] = sum(log1m_p[ii, 1:K[j], j]);
+    }
+    lp_b0[:, i] += log1m_P;
+    log_phi_1mP = log_phi[:, ii] + log1m_P[2:];
+    for (b in 1:Jm1) {
+      int bp1 = b + 1;
+      lp_b0[b, i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi_1mP[b:])
+                                           - log1m_P[bp1:] 
+                                           + log1m_exp(log1m_P[bp1:])));
+    }
+    log_lik0[2, i] += log_sum_exp(lp_b0[:, i]);
+  }
+  return (log_lik, log_lik0, lp_b, lp_b0);
+}
+
+/** 
+ * Robust design Jolly-Seber population sizes, number of entries and exits, and 
+ * super-population using the forward-backward sampling algorithm. Function is 
+ * overloaded:
+ *  1. h and logit_p per survey/secondary (requires I_aug as input)
+ *  2. h and logit_p per individual and survey/secondary
+ * 
+ * @param lp       Output of js_rd()
+ * @param f_l      First and last primary detected
+ * @param K        Number of secondaries
+ * @param log_phi  Log survival probabilities
+ * @param logit_p  Detection logits
+ * @param I_aug    Number of augmented individuals
+ 
+ * @return N        Population size per primary
+ * @return B        Number of entries per primary
+ * @return D        Number of exits per primary
+ * @return N_super  Super-population
+ */
+tuple(array[] int, array[] int, array[] int, int) 
+  js_rd_rng(tuple(vector, vector, matrix, vector) lp, data array[,] int f_l, 
+            data array[] int K, vector log_phi, matrix logit_p, 
+            data int I_aug) {
+  int I = size(lp.1), J = rows(lp.3), Jm1 = J - 1, K_max = max(K);
+  vector[Jm1] log1m_phi = log1m_exp(log_phi);
+  matrix[K_max, J] log1m_p = log1m_inv_logit(logit_p);
+  vector[J] log1m_P;
+  for (j in 1:J) {
+    log1m_P[j] = sum(log1m_p[1:K[j], j]);
+  }
+  array[Jm1] matrix[2, 2] P;
+  for (j in 1:Jm1) {
+    P[j] = [[ log_phi[j], log1m_phi[j] ],
+            [ negative_infinity(), 0 ]];
+  }
+  array[Jm1] matrix[2, J] Omega;
+  for (j in 1:Jm1) {
+    int jp1 = j + 1;
+    Omega[j, :, jp1] = P[j, 1]';
+    Omega[j, 1, jp1] += log1m_P[jp1];
+    for (jj in jp1 + 1:J) {
+      int jjm1 = jj - 1;
+      Omega[j, :, jj] = log_prod_exp(P[jjm1]', Omega[j, :, jjm1]);
+      Omega[j, 1, jj] += log1m_P[jj];
+    }
+  }
+  array[J] int N = zeros_int_array(J), 
+               B = zeros_int_array(J), 
+               D = zeros_int_array(J);
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2], last_alive = l;
+    if (l < J) {
+      int z = latent_rng(Omega[l, :, J]);
+      if (z == 1) {
+        last_alive = J;
+      } else {
+        if (l < Jm1) {
+          int JJ = Jm1 - l;
+          array[JJ] int idx = linspaced_int_array(JJ, l + 1, Jm1);
+          for (j in reverse(idx)) {
+            z = latent_rng(Omega[l, :, j] + P[j, :, 2]);
+            if (z == 1) {
+              last_alive = j;
+              break;
+            }
+          }
+        }
+      }
+    }
+    int b = latent_rng(lp.3[1:f, i]);
+    B[b] += 1;
+    for (j in b:last_alive) {
+      N[j] += 1;
+    }
+    if (last_alive < J) {
+      D[last_alive + 1] += 1;
+    }
+  }
+  int N_super = I;
+  for (i in 1:I_aug) {
+    int w = latent_rng(lp.2) - 1;
+    if (w) {
+      N_super += 1;
+      int b = latent_rng(lp.4), last_alive = b;
+      if (b < J) {
+        int bp1 = b + 1;
+        int z = latent_rng(Omega[b, :, J]);
+        if (z == 1) {
+          last_alive = J;
+        } else {
+          if (bp1 < J) {
+            int JJ = Jm1 - b;
+            array[JJ] int idx = linspaced_int_array(JJ, bp1, Jm1);
+            for (j in reverse(idx)) {
+              z = latent_rng(Omega[b, :, j] + P[j, :, 2]);
+              if (z == 1) {
+                last_alive = j;
+                break;
+              }
+            }
+          }
+        }
+      }
+      B[b] += 1;
+      for (j in b:last_alive) {
+        N[j] += 1;
+      }
+      if (last_alive < J) {
+        D[last_alive + 1] += 1;
+      }
+    }
+  }
+  if (N_super == I + I_aug) {
+    print("N_super == I + I_aug. Increase I_aug and try again.");
+  }
+  return (N, B, D, N_super);
+}
+
+tuple(array[] int, array[] int, array[] int, int) 
+  js_rd_rng(tuple(vector, matrix, matrix, matrix) lp, data array[,] int f_l, 
+            data array[] int K, matrix log_phi, array[] matrix logit_p) {
+  int I = size(lp.1), I_aug = cols(lp.2), J = rows(lp.3), Jm1 = J - 1, 
+      I_all = I + I_aug, K_max = max(K);
+  array[I_all] matrix[K_max, J] log1m_p = log1m_inv_logit(logit_p);
+  vector[Jm1] log1m_phi;
+  vector[J] log1m_P;
+  matrix[2, 2] P;
+  P[2] = [ negative_infinity(), 0 ];
+  array[J] int N = zeros_int_array(J), 
+               B = zeros_int_array(J), 
+               D = zeros_int_array(J);
+  matrix[2, J] Omega;
+  for (i in 1:I) {
+    int f = f_l[i, 1], l = f_l[i, 2], last_alive = l;
+    if (l < J) {
+      int lp1 = l + 1;
+      log1m_phi[l:] = log1m_exp(log_phi[l:, i]);
+      for (j in lp1:J) {
+        log1m_P[j] = sum(log1m_p[i, 1:K[j], j]);
+      }
+      Omega[:, lp1] = [ log_phi[l, i] + log1m_P[lp1], 
+                        log1m_phi[l] ]';
+      for (j in lp1 + 1:J) {
+        int jm1 = j - 1;
+        P[1] = [ log_phi[jm1, i], log1m_phi[jm1] ];
+        Omega[:, j] = log_prod_exp(P', Omega[:, jm1]);
+        Omega[1, j] += log1m_P[j];
+      }
+      int z = latent_rng(Omega[:, J]);
+      if (z == 1) {
+        last_alive = J;
+      } else {
+        if (l < Jm1) {
+          int JJ = Jm1 - l;
+          array[JJ] int idx = linspaced_int_array(JJ, lp1, Jm1);
+          for (j in reverse(idx)) {
+            Omega[1, j] += log1m_phi[j];
+            z = latent_rng(Omega[:, j]);
+            if (z == 1) {
+              last_alive = j;
+              break;
+            }
+          }
+        }
+      }
+    }
+    int b = latent_rng(lp.3[:f, i]);
+    B[b] += 1;
+    for (j in b:last_alive) {
+      N[j] += 1;
+    }
+    if (last_alive < J) {
+      D[last_alive + 1] += 1;
+    }
+  }
+  int N_super = I;
+  for (i in 1:I_aug) {
+    int w = latent_rng(lp.2[:, i]) - 1;
+    if (w) {
+      N_super += 1;
+      int b = latent_rng(lp.4[:, i]), last_alive = b;
+      if (b < J) {
+        int ii = I + i, bp1 = b + 1;
+        log1m_phi[b:] = log1m_exp(log_phi[b:, ii]);
+        for (j in bp1:J) {
+          log1m_P[j] = sum(log1m_p[ii, 1:K[j], j]);
+        }
+        Omega[:, bp1] = [ log_phi[b, ii] + log1m_P[bp1], 
+                          log1m_phi[b] ]';
+        for (j in bp1 + 1:J) {
+          int jm1 = j - 1;
+          P[1] = [ log_phi[jm1, ii], log1m_phi[jm1] ];
+          Omega[:, j] = log_prod_exp(P', Omega[:, jm1]);
+          Omega[1, j] += log1m_P[j];
+        }
+        int z = latent_rng(Omega[:, J]);
+        if (z == 1) {
+          last_alive = J;
+        } else {
+          if (b < Jm1) {
+            int JJ = Jm1 - b;
+            array[JJ] int idx = linspaced_int_array(JJ, bp1, Jm1);
+            for (j in reverse(idx)) {
+              Omega[1, j] += log1m_phi[j];
+              z = latent_rng(Omega[:, j]);
+              if (z == 1) {
+                last_alive = j;
+                break;
+              }
+            }
+          }
+        }
+      }
+      B[b] += 1;
+      for (j in b:last_alive) {
+        N[j] += 1;
+      }
+      if (last_alive < J) {
+        D[last_alive + 1] += 1;
+      }
+    }
+  }
+  if (N_super == I_all) {
+    print("N_super == I + I_aug. Increase I_aug and try again.");
+  }
+  return (N, B, D, N_super);
+}

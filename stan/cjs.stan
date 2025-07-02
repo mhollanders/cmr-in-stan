@@ -19,18 +19,21 @@ parameters {
   vector<lower=0, upper=1>[Jm1] p;  // detection probabilities
 }
 
+transformed parameters {
+  real lprior = gamma_lpdf(h | 1, 1) + beta_lpdf(p | 1, 1);
+}
+
 model {
   vector[Jm1] log_phi = -h * tau, logit_p = logit(p);
   /* Code change for individual effects
   matrix[Jm1, I] log_phi = rep_matrix(-h * tau, I),
                  logit_p = rep_matrix(logit(p), I); // */
   target += sum(cjs(y, f_l, log_phi, logit_p));
-  target += gamma_lupdf(h | 1, 1) + beta_lupdf(p | 1, 1);
+  target += lprior;
 }
 
 generated quantities {
   vector[I] log_lik;
-  real lprior = gamma_lpdf(h | 1, 1) + beta_lpdf(p | 1, 1);
   {
     vector[Jm1] log_phi = -h * tau, logit_p = logit(p);
     /* Code change for individual effects

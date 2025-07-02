@@ -64,27 +64,16 @@ array[,] int first_last(data array[,,] int y) {
  */
 array[] int first_sec(data array[,,] int y, data array[] int f) {
   int I = size(y), K = size(y[1, 1]);
-  array[I] int f_k = zeros_int_array(I);
+  array[I] int g = zeros_int_array(I);
   for (i in 1:I) {
     for (k in 1:K) {
       if (y[i, f[i], k]) {
-        f_k[i] = k;
+        g[i] = k;
         break;
       }
     }
   }
-  return f_k;
-}
-
-/** 
- * Sample latent discrete parameters
- *
- * @param A  Vector of unnormalised (log) probabilities
- * @return   Categorical outcome
- */
-int latent_rng(vector A) {
-  return categorical_rng(softmax(A));
-  // return categorical_logit_rng(A);
+  return g;
 }
 
 /**
@@ -142,16 +131,54 @@ real log_prod_exp(row_vector A, vector B) {
  * @return   Transition rate matrix
  */
 matrix rate_matrix(vector h, row_vector q) {
-  int S = size(h), Sm_1 = S - 1;
+  int S = size(h), Sm1 = S - 1;
   matrix[S, S] Q = diag_matrix(-h);
-  row_vector[Sm_1] q_s;
-  int ss = 1;
+  row_vector[Sm1] q_s;
+  int idx = 1;
   for (s in 1:S) {
-    q_s = segment(q, ss, Sm_1);
+    q_s = segment(q, idx, Sm1);
     Q[s, 1:s - 1] = head(q_s, s - 1);
     Q[s, s] -= sum(q_s);
     Q[s, s + 1:S] = tail(q_s, S - s);
-    ss += Sm_1;
+    idx += Sm1;
   }
   return Q;
+}
+
+/** 
+ * Create lower triangular row stochastic matrix from probabilities
+ *
+ * @param S  Number of dimensions
+ * @param u  Unconstrained probabilities
+ *
+ * @return   Lower triangular row stochastic matrix
+ */
+matrix triangular_row_stochastic_matrix(int S, vector u) {
+  matrix[S, S] D = rep_matrix(0, S, S);
+  D[1, 1] = 1;
+  int idx = 1;
+  for (s in 2:S) {
+    int sm1 = s - 1;
+    D[s, :s] = simplex_jacobian(segment(u, idx, sm1))';
+    idx += sm1;
+  }
+  return D;
+}
+
+/** 
+ * Create lower triangular bidiagonal row stochastic matrix from probabilities
+ *
+ * @param delta  Probabilities
+ *
+ * @return   Lower triangular bidiagonal row stochastic matrix
+ */
+matrix triangular_bidiagonal_stochastic_matrix(vector delta) {
+  int S = size(delta) + 1;
+  matrix[S, S] E = rep_matrix(0, S, S);
+  E[1, 1] = 1;
+  for (s in 2:S) {
+    int sm1 = s - 1;
+    E[s, sm1:s] = [ 1 - delta[sm1], delta[sm1] ];
+  }
+  return E;
 }

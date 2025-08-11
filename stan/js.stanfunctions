@@ -134,14 +134,13 @@ tuple(vector, vector, matrix, vector)
         vector log_phi, matrix logit_p, vector log_beta, real psi) {
   int I = size(y), J = size(y[1]), Jm1 = J - 1, K_max = max(K);
   real log_psi = log(psi), log_1mpsi = log1m(psi);
-  matrix[K_max, J] log_1mp = log1m_inv_logit(logit_p);
-  vector[J] log_1mp_sum, log_p;
+  vector[J] log_1mp, log_p;
   for (j in 1:J) {
-    log_1mp_sum[j] = sum(log_1mp[1:K[j], j]);
+    log_1mp[j] = sum(log1m_inv_logit(logit_p[:K[j], j]));
   }
-  log_p = log1m_exp(log_1mp_sum);
-  vector[Jm1] rev_log_1mp_phi = reverse(log_1mp_sum[:Jm1] + log_phi),
-              log_phi_1mp = cumulative_sum(log_phi + log_1mp_sum[2:]);
+  log_p = log1m_exp(log_1mp);
+  vector[Jm1] rev_log_1mp_phi = reverse(log_1mp[:Jm1] + log_phi),
+              log_phi_1mp = cumulative_sum(log_phi + log_1mp[2:]);
   matrix[J, J] beta_not_p = rep_matrix(log_beta, J);
   matrix[J, Jm1] phi_not_p;
   phi_not_p[2:] = rep_matrix(log_phi_1mp, Jm1);
@@ -154,11 +153,11 @@ tuple(vector, vector, matrix, vector)
   vector[Jm1] log_chi;
   for (l in 1:Jm1) {
     int lp1 = l + 1;
-    log_chi[l] = log1m_exp(log_sum_exp(phi_not_p[lp1:, l] - log_1mp_sum[lp1:] 
+    log_chi[l] = log1m_exp(log_sum_exp(phi_not_p[lp1:, l] - log_1mp[lp1:] 
                                        + log_p[lp1:]));
   }
   matrix[J, I] lp_b;
-  vector[I] log_lik = log_psi + log_1mp_sum[f_l[:, 1]];
+  vector[I] log_lik = log_psi + log_1mp[f_l[:, 1]];
   for (i in 1:I) {
     int f = f_l[i, 1], l = f_l[i, 2];
     lp_b[:f, i] = beta_not_p[:f, f];
@@ -174,7 +173,7 @@ tuple(vector, vector, matrix, vector)
       log_lik[i] += log_chi[l];
     }
   }
-  vector[J] lp_b0 = log_beta + log_1mp_sum;
+  vector[J] lp_b0 = log_beta + log_1mp;
   lp_b0[:Jm1] += log_chi;
   vector[2] log_lik0 = [ log_1mpsi, log_psi + log_sum_exp(lp_b0) ]';
   return (log_lik, log_lik0, lp_b, lp_b0);
@@ -186,26 +185,25 @@ tuple(vector, matrix, matrix, matrix)
   int I = size(y), I_all = cols(log_phi), I_aug = I_all - I, J = size(y[1]), 
       Jm1 = J - 1, K_max = max(K);
   real log_psi = log(psi), log_1mpsi = log1m(psi);
-  array[I_all] matrix[K_max, J] log_1mp = log1m_inv_logit(logit_p);
-  vector[J] log_1mp_sum;
+  vector[J] log_1mp;
   vector[Jm1] log_phi_1mp;
   matrix[J, I] lp_b = rep_matrix(log_beta, I);
   vector[I] log_lik = rep_vector(log_psi, I);
   for (i in 1:I) {
     int f = f_l[i, 1], l = f_l[i, 2];
     for (j in f:J) {
-      log_1mp_sum[j] = sum(log_1mp[i, :K[j], j]);
+      log_1mp[j] = sum(log1m_inv_logit(logit_p[i, :K[j], j]));
     }
     if (f > 1) {
       int fm1 = f - 1;
       lp_b[:fm1, i] += reverse(cumulative_sum(reverse(log_phi[:fm1, i] 
-                                                      + log_1mp_sum[:fm1])));
+                                                      + log_1mp[:fm1])));
     }
-    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp_sum[f] 
+    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp[f] 
                   + dot_product(to_vector(y[i, f]), logit_p[i, :, f]);
     if (f < J) {
       int fp1 = f + 1;
-      log_phi_1mp[f:] = log_phi[f:, i] + log_1mp_sum[fp1:];
+      log_phi_1mp[f:] = log_phi[f:, i] + log_1mp[fp1:];
       if (f < l) {
         log_lik[i] += sum(log_phi_1mp[f:l - 1])
                       + sum(rows_dot_product(to_matrix(y[i, fp1:l])',
@@ -214,8 +212,8 @@ tuple(vector, matrix, matrix, matrix)
       if (l < J) {
         int lp1 = l + 1;
         log_lik[i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi_1mp[l:])
-                                            - log_1mp_sum[lp1:] 
-                                            + log1m_exp(log_1mp_sum[lp1:])));
+                                            - log_1mp[lp1:] 
+                                            + log1m_exp(log_1mp[lp1:])));
        }
     }
   }
@@ -224,15 +222,15 @@ tuple(vector, matrix, matrix, matrix)
   for (i in 1:I_aug) {
     int ii = I + i;
     for (j in 1:J) {
-      log_1mp_sum[j] = sum(log_1mp[ii, :K[j], j]);
+      log_1mp[j] = sum(log1m_inv_logit(logit_p[ii, :K[j], j]));
     }
-    lp_b0[:, i] += log_1mp_sum;
-    log_phi_1mp = log_phi[:, ii] + log_1mp_sum[2:];
+    lp_b0[:, i] += log_1mp;
+    log_phi_1mp = log_phi[:, ii] + log_1mp[2:];
     for (b in 1:Jm1) {
       int bp1 = b + 1;
       lp_b0[b, i] += log1m_exp(log_sum_exp(cumulative_sum(log_phi_1mp[b:])
-                                           - log_1mp_sum[bp1:] 
-                                           + log1m_exp(log_1mp_sum[bp1:])));
+                                           - log_1mp[bp1:] 
+                                           + log1m_exp(log_1mp[bp1:])));
     }
     log_lik0[2, i] += log_sum_exp(lp_b0[:, i]);
   }
@@ -485,15 +483,15 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
   int I = size(y), J = size(y[1]), Jm1 = J - 1, K_max = max(K), 
       S = rows(log_H[1]);
   real log_psi = log(psi), log_1mpsi = log1m(psi);
-  array[J] matrix[S, K_max] log_1mp = log1m_inv_logit(logit_p);
-  matrix[S, J] log_1mp_sum, log_eta_1mp, log_p;
+  matrix[S, J] log_1mp, log_eta_1mp, log_p;
   for (j in 1:J) {
+    int K_j = K[j];
     for (s in 1:S) {
-      log_1mp_sum[s, j] = sum(log_1mp[j, s, :K[j]]);
+      log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
     }
   }
-  log_eta_1mp = log_eta + log_1mp_sum;
-  log_p = log1m_exp(log_1mp_sum);
+  log_eta_1mp = log_eta + log_1mp;
+  log_p = log1m_exp(log_1mp);
   array[Jm1, S] matrix[S, Jm1] beta_not_p;
   for (b in 1:Jm1) {
     for (a in 1:S) {
@@ -503,7 +501,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
         int jm1 = j - 1;
         beta_not_p[b, a, :, j] = log_prod_exp(log_H[jm1]', 
                                               beta_not_p[b, a, :, jm1])
-                                 + log_1mp_sum[:, j];
+                                 + log_1mp[:, j];
       }
     }
   }
@@ -513,12 +511,12 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
   for (l in 1:Jm1) {
     int lp1 = l + 1;
     for (s in 1:S) {
-      Omega = log_H[l, s]' + log_1mp_sum[:, lp1];
-      log1m_chi[l] = log_sum_exp(Omega - log_1mp_sum[:, lp1] + log_p[:, lp1]);
+      Omega = log_H[l, s]' + log_1mp[:, lp1];
+      log1m_chi[l] = log_sum_exp(Omega - log_1mp[:, lp1] + log_p[:, lp1]);
       for (j in lp1:Jm1) {
         int jp1 = j + 1;
-        Omega = log_prod_exp(log_H[j]', Omega) + log_1mp_sum[:, jp1];
-        log1m_chi[j] = log_sum_exp(Omega - log_1mp_sum[:, jp1] + log_p[:, jp1]);
+        Omega = log_prod_exp(log_H[j]', Omega) + log_1mp[:, jp1];
+        log1m_chi[j] = log_sum_exp(Omega - log_1mp[:, jp1] + log_p[:, jp1]);
       }
       log_chi[s, l] = log1m_exp(log_sum_exp(log1m_chi[l:]));
     }
@@ -539,7 +537,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
       lp_b[b, i] = log_sum_exp(lp_a[i, :, b]);
     }
     lp_b[f, i] = log_beta[f] + log_eta[y_j, f];
-    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp_sum[y_j, f];
+    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp[y_j, f];
     for (k in 1:K[f]) {
       log_lik[i] += (y_i[f, k] == y_j) * logit_p[f, y_j, k];
     }
@@ -554,7 +552,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
                       Omega[y_jm1] + log_H[jm1, y_jm1, y_j]
                       : log_sum_exp(Omega + log_H[jm1, :, y_j]);
           Omega = rep_vector(negative_infinity(), S);
-          Omega[y_j] = lp_j + log_1mp_sum[y_j, j];
+          Omega[y_j] = lp_j + log_1mp[y_j, j];
           for (k in 1:K[j]) {
             Omega[y_j] += (y_i[j, k] == y_j) * logit_p[j, y_j, k];
           }
@@ -562,7 +560,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
           Omega = y_jm1 ?
                   Omega[y_jm1] + log_H[jm1, y_jm1]'
                   : log_prod_exp(log_H[jm1]', Omega);
-          Omega += log_1mp_sum[:, j];
+          Omega += log_1mp[:, j];
         }
       }
       log_lik[i] += Omega[y_j];
@@ -589,8 +587,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
       Jm1 = J - 1, K_max = max(K), S = rows(log_H[1, 1]);
   real log_psi = log(psi), log_1mpsi = log1m(psi);
   array[Jm1] matrix[S, S] log_H_i;
-  array[I_all, J] matrix[S, K_max] log_1mp = log1m_inv_logit(logit_p);
-  matrix[S, J] log_1mp_sum, log_p;
+  matrix[S, J] log_1mp, log_p;
   vector[S] Omega;
   vector[Jm1] log1m_chi;
   array[J, K_max] int y_i;
@@ -600,26 +597,27 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
   for (i in 1:I) {
     log_H_i = log_H[i];
     for (j in 1:J) {
+      int K_j = K[j];
       for (s in 1:S) {
-        log_1mp_sum[s, j] = sum(log_1mp[i, j, s, :K[j]]);
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[i, j, s, :K_j]));
       }
     }
-    log_p = log1m_exp(log_1mp_sum);
+    log_p = log1m_exp(log_1mp);
     int f = f_l[i, 1], l = f_l[i, 2], fm1 = f - 1;
     y_i[f:l] = y[i, f:l];
     int y_j = max(y_i[f]);
     for (b in 1:fm1) {
       int bp1 = b + 1;
       if (bp1 == f) {
-        lp_a[i, :, b] = log_eta[:, b] + log_1mp_sum[:, b];
+        lp_a[i, :, b] = log_eta[:, b] + log_1mp[:, b];
         lp_b[b, i] = log_beta[b] + log_sum_exp(lp_a[i, :, b] 
                      + log_H_i[b, :, y_j]);
       } else {
         for (s in 1:S) {
-          Omega = log_beta[b] + log_eta[s, b] + log_1mp_sum[s, b]
-                  + log_H_i[b, s]' + log_1mp_sum[:, bp1];
+          Omega = log_beta[b] + log_eta[s, b] + log_1mp[s, b]
+                  + log_H_i[b, s]' + log_1mp[:, bp1];
           for (j in bp1 + 1:fm1) {
-            Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp_sum[:, j];
+            Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp[:, j];
           }
           lp_a[i, s, b] = log_sum_exp(Omega + log_H_i[fm1, :, y_j]);
         }
@@ -627,7 +625,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
       }
     }
     lp_b[f, i] = log_beta[f] + log_eta[y_j, f];
-    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp_sum[y_j, f];
+    log_lik[i] += log_sum_exp(lp_b[:f, i]) + log_1mp[y_j, f];
     for (k in 1:K[f]) {
       log_lik[i] += (y_i[f, k] == y_j) * logit_p[i, f, y_j, k];
     }
@@ -642,7 +640,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
                       Omega[y_jm1] + log_H_i[jm1, y_jm1, y_j]
                       : log_sum_exp(Omega + log_H_i[jm1, :, y_j]);
           Omega = rep_vector(negative_infinity(), S);
-          Omega[y_j] = lp_j + log_1mp_sum[y_j, j];
+          Omega[y_j] = lp_j + log_1mp[y_j, j];
           for (k in 1:K[j]) {
             Omega[y_j] += (y_i[j, k] == y_j) * logit_p[i, j, y_j, k];
           }
@@ -650,19 +648,19 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
           Omega = y_jm1 ?
                   Omega[y_jm1] + log_H_i[jm1, y_jm1]'
                   : log_prod_exp(log_H_i[jm1]', Omega);
-          Omega += log_1mp_sum[:, j];
+          Omega += log_1mp[:, j];
         }
       }
       log_lik[i] += Omega[y_j];
     }
     if (l < J) {
       int lp1 = l + 1;
-      Omega = log_H_i[l, y_j]' + log_1mp_sum[:, lp1];
-      log1m_chi[l] = log_sum_exp(Omega - log_1mp_sum[:, lp1] + log_p[:, lp1]);
+      Omega = log_H_i[l, y_j]' + log_1mp[:, lp1];
+      log1m_chi[l] = log_sum_exp(Omega - log_1mp[:, lp1] + log_p[:, lp1]);
       for (j in lp1:Jm1) {
         int jp1 = j + 1;
-        Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp_sum[:, jp1];
-        log1m_chi[j] = log_sum_exp(Omega - log_1mp_sum[:, jp1] + log_p[:, jp1]);
+        Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp[:, jp1];
+        log1m_chi[j] = log_sum_exp(Omega - log_1mp[:, jp1] + log_p[:, jp1]);
       }
       log_lik[i] += log1m_exp(log_sum_exp(log1m_chi[l:]));
     }
@@ -675,21 +673,22 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
     int ii = I + i;
     log_H_i = log_H[ii];
     for (j in 1:J) {
+      int K_j = K[j];
       for (s in 1:S) {
-        log_1mp_sum[s, j] = sum(log_1mp[ii, j, s, :K[j]]);
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[ii, j, s, :K_j]));
       }
     }
-    log_p = log1m_exp(log_1mp_sum);
-    lp_a0[i] += log_1mp_sum;
+    log_p = log1m_exp(log_1mp);
+    lp_a0[i] += log_1mp;
     for (b in 1:Jm1) {
       int bp1 = b + 1;
       for (a in 1:S) {
-        Omega = log_H_i[b, a]' + log_1mp_sum[:, bp1];
-        log1m_chi[b] = log_sum_exp(Omega - log_1mp_sum[:, bp1] + log_p[:, bp1]);
+        Omega = log_H_i[b, a]' + log_1mp[:, bp1];
+        log1m_chi[b] = log_sum_exp(Omega - log_1mp[:, bp1] + log_p[:, bp1]);
         for (j in bp1:Jm1) {
           int jp1 = j + 1;
-          Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp_sum[:, jp1];
-          log1m_chi[j] = log_sum_exp(Omega - log_1mp_sum[:, jp1] 
+          Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp[:, jp1];
+          log1m_chi[j] = log_sum_exp(Omega - log_1mp[:, jp1] 
                                      + log_p[:, jp1]);
         }
         lp_a0[i, a, b] += log1m_exp(log_sum_exp(log1m_chi[b:]));
@@ -974,14 +973,14 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
   int I = size(y), J = size(y[1]), Jm1 = J - 1, K_max = max(K), 
       Sp1 = rows(log_H[1]), S = Sp1 - 1;
   real log_psi = log(psi), log_1mpsi = log1m(psi);
-  array[J] matrix[S, K_max] log_1mp = log1m_inv_logit(logit_p);
-  matrix[Sp1, J] log_1mp_sum = rep_matrix(0, Sp1, J);
+  matrix[Sp1, J] log_1mp = rep_matrix(0, Sp1, J);
   for (j in 1:J) {
+    int K_j = K[j];
     for (s in 1:S) {
-      log_1mp_sum[s, j] = sum(log_1mp[j, s, :K[j]]);
+      log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
     }
   }
-  matrix[S, J] log_eta_1mp = log_eta + log_1mp_sum[:S], theta;
+  matrix[S, J] log_eta_1mp = log_eta + log_1mp[:S], theta;
   array[Jm1, S] matrix[S, J] beta_not_p;
   for (b in 1:Jm1) {
     int bp1 = b + 1;
@@ -991,7 +990,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
       for (j in bp1:Jm1) {
         beta_not_p[b, a, :, j + 1] = 
           log_prod_exp(log_H[j, :S, :S]', 
-                       beta_not_p[b, a, :, j] + log_1mp_sum[:S, j]);
+                       beta_not_p[b, a, :, j] + log_1mp[:S, j]);
       }
     }
   }
@@ -1003,7 +1002,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
   for (i in 1:I) {
     int f = f_l[i, 1], l = f_l[i, 2], fm1 = f - 1, fp1 = f + 1, lp1 = l + 1;
     y_i[f:l] = y[i, f:l];
-    theta = log_1mp_sum[:S];
+    theta = log_1mp[:S];
     for (j in f:l) {
       for (k in 1:K[j]) {
         int y_k = y_i[j, k];
@@ -1025,7 +1024,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
         } else {
           Omega[Sp1] = negative_infinity();
           for (j in lp1:J ) {
-            Omega = log_prod_exp(log_H[j - 1]', Omega) + log_1mp_sum[:, j];
+            Omega = log_prod_exp(log_H[j - 1]', Omega) + log_1mp[:, j];
           }
           lp_a[i, a, b] = log_sum_exp(Omega);
         }
@@ -1050,7 +1049,7 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
           } else {
             Omega[Sp1] = negative_infinity();
             for (j in lp1:J ) {
-              Omega = log_prod_exp(log_H[j - 1]', Omega) + log_1mp_sum[:, j];
+              Omega = log_prod_exp(log_H[j - 1]', Omega) + log_1mp[:, j];
             }
             lp_a[i, a, f] = log_sum_exp(Omega);
           }
@@ -1066,9 +1065,9 @@ tuple(vector, vector, matrix, vector, array[] matrix, matrix)
     int bp1 = b + 1;
     for (a in 1:S) {
       Omega = log_beta[b] + log_eta_1mp[a, b] + log_H[b, a]' 
-              + log_1mp_sum[:, bp1];
+              + log_1mp[:, bp1];
       for (j in bp1:Jm1) {
-        Omega = log_prod_exp(log_H[j]', Omega) + log_1mp_sum[:, j + 1];
+        Omega = log_prod_exp(log_H[j]', Omega) + log_1mp[:, j + 1];
       }
       lp_a0[a, b] = log_sum_exp(Omega);
     }
@@ -1088,8 +1087,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
       Jm1 = J - 1, K_max = max(K), Sp1 = rows(log_H[1, 1]), S = Sp1 - 1;
   real log_psi = log(psi), log_1mpsi = log1m(psi);
   array[Jm1] matrix[Sp1, Sp1] log_H_i;
-  array[J] matrix[S, K_max] log_1mp;
-  matrix[Sp1, J] log_1mp_sum = rep_matrix(0, Sp1, J);
+  matrix[Sp1, J] log_1mp = rep_matrix(0, Sp1, J);
   matrix[S, J] log_eta_1mp, theta;
   vector[Sp1] Omega;
   array[J, K_max] int y_i;
@@ -1100,14 +1098,14 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
     int f = f_l[i, 1], l = f_l[i, 2], fm1 = f - 1, fp1 = f + 1, lp1 = l + 1;
     y_i[f:l] = y[i, f:l];
     log_H_i = log_H[i];
-    log_1mp = log1m_inv_logit(logit_p[i]);
     for (j in 1:J) {
+      int K_j = K[j];
       for (s in 1:S) {
-        log_1mp_sum[s, j] = sum(log_1mp[j, s, :K[j]]);
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
       }
     }
-    log_eta_1mp[:, :f] = log_eta[:, :f] + log_1mp_sum[:S, :f];
-    theta = log_1mp_sum[:S];
+    log_eta_1mp[:, :f] = log_eta[:, :f] + log_1mp[:S, :f];
+    theta = log_1mp[:S];
     for (j in f:l) {
       for (k in 1:K[j]) {
         int y_k = y_i[j, k];
@@ -1122,7 +1120,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
         Omega[:S] = log_beta[b] + log_eta_1mp[a, b] + log_H_i[b, a, :S]';
         for (j in bp1:fm1) {
           Omega[:S] = log_prod_exp(log_H_i[j, :S, :S]', 
-                                   Omega[:S] + log_1mp_sum[:S, j]);
+                                   Omega[:S] + log_1mp[:S, j]);
         }
         Omega[:S] += theta[:, f];
         for (j in fp1:l) {
@@ -1134,7 +1132,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
         } else {
           Omega[Sp1] = negative_infinity();
           for (j in lp1:J) {
-            Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp_sum[:, j];
+            Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp[:, j];
           }
           lp_a[i, a, b] = log_sum_exp(Omega);
         }
@@ -1159,14 +1157,13 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
           } else {
             Omega[Sp1] = negative_infinity();
             for (j in lp1:J ) {
-              Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp_sum[:, j];
+              Omega = log_prod_exp(log_H_i[j - 1]', Omega) + log_1mp[:, j];
             }
             lp_a[i, a, f] = log_sum_exp(Omega);
           }
         }
       }
     }
-    
     lp_b[f, i] = log_sum_exp(lp_a[i, :, f]);
     log_lik[i] += log_sum_exp(lp_b[:f, i]);
   }
@@ -1176,19 +1173,20 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
   for (i in 1:I_aug) {
     int ii = I + i;
     log_H_i = log_H[ii];
-    log_1mp = log1m_inv_logit(logit_p[ii]);
     for (j in 1:J) {
+      int K_j = K[j];
       for (s in 1:S) {
-        log_1mp_sum[s, j] = sum(log_1mp[j, s, :K[j]]);
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
       }
     }
+    log_eta_1mp = log_eta + log_1mp[:S];
     for (b in 1:Jm1) {
       int bp1 = b + 1;
       for (a in 1:S) {
         Omega = log_beta[b] + log_eta_1mp[a, b] + log_H_i[b, a]' 
-                + log_1mp_sum[:, bp1];
+                + log_1mp[:, bp1];
         for (j in bp1:Jm1) {
-          Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp_sum[:, j + 1];
+          Omega = log_prod_exp(log_H_i[j]', Omega) + log_1mp[:, j + 1];
         }
         lp_a0[i, a, b] = log_sum_exp(Omega);
       }

@@ -29,8 +29,7 @@ transformed parameters {
 }
 
 model {
-  matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
-  Q[:S] = append_col(rate_matrix(h, q), h);
+  matrix[Sp1, Sp1] Q = rate_matrix(h, q);
   matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
   matrix[S, J] log_eta = log(eta);  
   array[Jm1] matrix[Sp1, Sp1] log_H;
@@ -54,8 +53,7 @@ model {
 generated quantities {
   vector[I] log_lik;
   {
-    matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
-    Q[:S] = append_col(rate_matrix(h, q), h);
+    matrix[Sp1, Sp1] Q = rate_matrix(h, q);
     matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
     matrix[S, J] log_eta = log(eta);  
     array[Jm1] matrix[Sp1, Sp1] log_H;

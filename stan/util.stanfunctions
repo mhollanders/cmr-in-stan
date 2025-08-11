@@ -122,8 +122,7 @@ real log_prod_exp(row_vector A, vector B) {
 }
 
 /** 
- * Create transition rate matrix without absorbing states from transition 
- * and mortality rates
+ * Create transition rate matrix from mortality and transition rates
  *
  * @param h  Mortality rates per state
  * @param q  Non-mortality transition rates between states
@@ -131,17 +130,18 @@ real log_prod_exp(row_vector A, vector B) {
  * @return   Transition rate matrix
  */
 matrix rate_matrix(vector h, row_vector q) {
-  int S = size(h), Sm1 = S - 1;
-  matrix[S, S] Q = diag_matrix(-h);
+  int S = size(h), Sm1 = S - 1, Sp1 = S + 1;
+  matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
   row_vector[Sm1] q_s;
   int idx = 1;
   for (s in 1:S) {
     q_s = segment(q, idx, Sm1);
     Q[s, 1:s - 1] = head(q_s, s - 1);
-    Q[s, s] -= sum(q_s);
+    Q[s, s] = -h[s] - sum(q_s);
     Q[s, s + 1:S] = tail(q_s, S - s);
     idx += Sm1;
   }
+  Q[:S, Sp1] = h;
   return Q;
 }
 

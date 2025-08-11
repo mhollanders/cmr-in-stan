@@ -44,7 +44,7 @@ model {
   matrix[S, J] log_eta = log(eta);
   array[Jm1] matrix[S, S] log_H;
   for (j in 1:Jm1) {
-    log_H[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+    log_H[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
   }
   array[J] matrix[S, K_max] logit_p;
   for (j in 1:J) {
@@ -57,7 +57,7 @@ model {
   /* Code change for individual effects
   array[Jm1] matrix[S, S] log_H_j;
   for (j in 1:Jm1) {
-    log_H_j[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+    log_H_j[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
   }
   array[I_all, Jm1] matrix[S, S] log_H = rep_array(log_H_j, I_all);
   array[J] matrix[S, K_max] logit_p_j;
@@ -82,8 +82,7 @@ generated quantities {
   {
     vector[J] log_beta = log(beta);
     matrix[S, J] log_eta = log(eta);
-    matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
-    Q[:S] = append_col(rate_matrix(h, q), h);
+    matrix[Sp1, Sp1] Q = rate_matrix(h, q);
     array[Jm1] matrix[Sp1, Sp1] log_H;
     for (j in 1:Jm1) {
       log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);

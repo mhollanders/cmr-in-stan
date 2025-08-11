@@ -29,13 +29,13 @@ transformed parameters {
 model {
   array[Jm1] matrix[S, S] log_H;
   for (j in 1:Jm1) {
-    log_H[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+    log_H[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
   }
   matrix[S, Jm1] logit_p = logit(p);
   /* Code change for individual effects
   array[Jm1] matrix[S, S] log_H_j;
   for (j in 1:Jm1) {
-    log_H_j[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+    log_H_j[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
   }
   array[I, Jm1] matrix[S, S] log_H = rep_array(log_H_j, I);
   array[I] matrix[S, Jm1] logit_p = rep_array(logit(p), I); // */
@@ -48,13 +48,13 @@ generated quantities {
   {
     array[Jm1] matrix[S, S] log_H;
     for (j in 1:Jm1) {
-      log_H[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+      log_H[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
     }
     matrix[S, Jm1] logit_p = logit(p);
     /* Code change for individual effects
     array[Jm1] matrix[S, S] log_H_j;
     for (j in 1:Jm1) {
-      log_H_j[j] = log(matrix_exp(rate_matrix(h, q) * tau[j]));
+      log_H_j[j] = log(matrix_exp(rate_matrix(h, q)[:S, :S] * tau[j]));
     }
     array[I, Jm1] matrix[S, S] log_H = rep_array(log_H_j, I);
     array[I] matrix[S, Jm1] logit_p = rep_array(logit(p), I); // */

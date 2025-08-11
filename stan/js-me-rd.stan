@@ -44,8 +44,7 @@ model {
   matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
   vector[J] log_beta = log(beta);
   matrix[S, J] log_eta = log(eta);
-  matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
-  Q[:S] = append_col(rate_matrix(h, q), h);
+  matrix[Sp1, Sp1] Q = rate_matrix(h, q);
   array[Jm1] matrix[Sp1, Sp1] log_H;
   for (j in 1:Jm1) {
     log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
@@ -89,8 +88,7 @@ generated quantities {
     matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
     vector[J] log_beta = log(beta);
     matrix[S, J] log_eta = log(eta);
-    matrix[Sp1, Sp1] Q = rep_matrix(0, Sp1, Sp1);
-    Q[:S] = append_col(rate_matrix(h, q), h);
+    matrix[Sp1, Sp1] Q = rate_matrix(h, q);
     array[Jm1] matrix[Sp1, Sp1] log_H;
     for (j in 1:Jm1) {
       log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);

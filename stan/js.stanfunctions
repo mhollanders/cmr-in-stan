@@ -3,9 +3,10 @@
  * occasions for observed individuals, and log likelihoods associated with
  * unseen augmented individual(s). Function is overloaded (first is much faster 
  * without individual effects):
- *  1. h and logit_p per survey with one augmented log likelihood computation
- *  2. h and logit_p per individual and survey with log likelihood computations
- *     for each augmented individual
+ *  1. log_phi and logit_p per survey with one augmented log likelihood 
+ *     computation
+ *  2. log_phi and logit_p per individual and survey with log likelihood 
+ *     computations for each augmented individual
  * 
  * @param y         Detection history [I, J]
  * @param f_l       First and last survey detected [I, 2]
@@ -111,10 +112,10 @@ tuple(vector, matrix, matrix, matrix)
  * likelihoods of entry occasions for observed individuals, and log likelihoods
  * associated with unseen augmented individual(s). Function is overloaded 
  * (first is much faster without individual effects):
- *  1. h and logit_p per survey/secondary with one augmented log likelihood 
- *     computation
- *  2. h and logit_p per individual and survey/secondary with log likelihood 
- *     computations for each augmented individual
+ *  1. log_phi and logit_p per survey/secondary with one augmented log 
+ *     likelihood computation
+ *  2. log_phi and logit_p per individual and survey/secondary with log 
+ *     likelihood computations for each augmented individual
  * 
  * @param y         Detection history [I, J, K_max]
  * @param f_l       First and last survey detected [I, 2]

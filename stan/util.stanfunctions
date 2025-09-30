@@ -1,3 +1,46 @@
+/**
+ * Compute correlations from lower triangular Cholesky factor
+ *
+ * @param O_L  Lower triangular Cholesky factor of correlation matrix
+ *
+ * @return     Correlations
+ */
+vector correlations(matrix O_L) {
+  int I = cols(O_L), R = choose(I, 2);
+  vector[R] rho;
+  matrix[I, I] O = multiply_lower_tri_self_transpose(O_L);
+  int idx = 1;
+  if (R) {
+    for (i in 1:I - 1) {
+      for (j in i + 1:I) {
+        rho[idx] = O[j, i];
+        idx += 1;
+      }
+    }
+  }
+  return rho;
+}
+
+/** 
+ * Produce Dirichlet log expectation vector for entry probabilities where:
+ *   beta[1:J] ~ dirichlet(kappa * alpha[1:J])
+ *   alpha[1] = exp(-h * sum(tau))
+ *   alpha[2:J] = (1 - alpha[1]) * tau / sum(tau)
+ *
+ * @param h        Mortality hazard rate (average or intercept)
+ * @param log_tau  Log of the survey intervals (scaled to have mean 1)
+ *
+ * @return  Simplex of expectations
+ */
+vector entry_log_shapes(real h, data vector log_tau) {
+  int Jm1 = size(log_tau), J = Jm1 + 1;
+  real log_Delta = sum(log_tau);
+  vector[J] log_alpha;
+  log_alpha[1] = -h * exp(log_Delta);
+  log_alpha[2:J] = log1m_exp(log_alpha[1]) + log_tau - log(Jm1);
+  return log_alpha;
+}
+
 /** 
  * Get first and last survey of detection for detection history. Function is 
  * overloaded for single survey and robust design.

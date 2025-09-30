@@ -18,7 +18,7 @@ data {
 transformed data {
   int I_all = I + I_aug, Jm1 = J - 1, Sm1 = S - 1, Sp1 = S + 1;
   array[I, 2] int f_l = first_last(y);
-  vector[Jm1] log_tau_scl = log(tau / sum(tau) * Jm1);
+  vector[Jm1] tau_scl = tau / mean(tau), log_tau_scl = log(tau_scl);
 }
 
 parameters {
@@ -35,7 +35,7 @@ parameters {
 transformed parameters {
   vector[J] log_alpha = zeros_vector(J);
   log_alpha[2:] += log(mu) + log_tau_scl;
-  real lprior = gamma_lpdf(h | 1, 1) + gamma_lpdf(q | 1, 1)
+  real lprior = gamma_lpdf(h | 1, 3) + gamma_lpdf(q | 1, 3)
                 + beta_lpdf(to_vector(p) | 1, 1)
                 + gamma_lpdf(mu | 1, 1) + dirichlet_lpdf(beta | exp(log_alpha));
 }
@@ -47,7 +47,7 @@ model {
   matrix[Sp1, Sp1] Q = rate_matrix(h, q);
   array[Jm1] matrix[Sp1, Sp1] log_H;
   for (j in 1:Jm1) {
-    log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+    log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
     log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
   }
   array[J] matrix[S, K_max] logit_p;
@@ -61,7 +61,7 @@ model {
   /* Code change for individual effects
   array[Jm1] matrix[Sp1, Sp1] log_H_j;
   for (j in 1:Jm1) {
-    log_H_j[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+    log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
     log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
   }
   array[I_all, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I_all);
@@ -91,7 +91,7 @@ generated quantities {
     matrix[Sp1, Sp1] Q = rate_matrix(h, q);
     array[Jm1] matrix[Sp1, Sp1] log_H;
     for (j in 1:Jm1) {
-      log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+      log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
       log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
     }
     array[J] matrix[S, K_max] logit_p;
@@ -104,7 +104,7 @@ generated quantities {
     /* Code change for individual effects
     array[Jm1] matrix[Sp1, Sp1] log_H_j;
     for (j in 1:Jm1) {
-      log_H_j[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+      log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
       log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
     }
     array[I_all, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I_all);

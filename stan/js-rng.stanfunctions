@@ -2,8 +2,8 @@
  * Jolly-Seber population sizes, number of entries and exits, and 
  * super-population using the forward-backward sampling algorithm. Function is 
  * overloaded:
- *  1. h and logit_p per survey
- *  2. h and logit_p per individual and survey
+ *  1. log_phi and logit_p per survey
+ *  2. log_phi and logit_p per individual and survey
  * 
  * @param lp       Output of js()
  * @param f_l      First and last survey detected [I, 2]
@@ -213,8 +213,8 @@ tuple(array[] int, array[] int, array[] int, int)
  * Robust design Jolly-Seber population sizes, number of entries and exits, and 
  * super-population using the forward-backward sampling algorithm. Function is 
  * overloaded:
- *  1. h and logit_p per survey/secondary
- *  2. h and logit_p per individual and survey/secondary
+ *  1. log_phi and logit_p per survey/secondary
+ *  2. log_phi and logit_p per individual and survey/secondary
  * 
  * @param lp       Output of js_rd()
  * @param f_l      First and last primary detected [I, 2]
@@ -1335,7 +1335,7 @@ tuple(array[,] int, array[,] int, array[,] int, int)
  *  1. log_P and logit_p per survey/secondary
  *  2. log_P and logit_p per individual and survey/secondary
  * 
- * @param lp       Output of js_ms()
+ * @param lp       Output of js_ms_rd()
  * @param y        Detection history [I, J, K_max]
  * @param f_l      First and last survey detected [I, 2]
  * @param log_H    Log transition matrices [(I, )J - 1, S + 1, S + 1]

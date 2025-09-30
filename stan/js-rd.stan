@@ -17,7 +17,7 @@ data {
 transformed data {
   int I_all = I + I_aug, Jm1 = J - 1;
   array[I, 2] int f_l = first_last(y);
-  vector[Jm1] log_tau_scl = log(tau / sum(tau) * Jm1);
+  vector[Jm1] tau_scl = tau / mean(tau), log_tau_scl = log(tau_scl);
 }
 
 parameters {
@@ -31,7 +31,7 @@ parameters {
 transformed parameters {
   vector[J] log_alpha = zeros_vector(J);
   log_alpha[2:] += log(mu) + log_tau_scl;
-  real lprior = gamma_lpdf(h | 1, 1) + beta_lpdf(p | 1, 1)
+  real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1)
                 + gamma_lpdf(mu | 1, 1) + dirichlet_lpdf(beta | exp(log_alpha));  
 }
 

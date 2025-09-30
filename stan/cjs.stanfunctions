@@ -59,6 +59,18 @@ vector cjs(data array[,] int y, data array[,] int f_l, matrix log_phi,
   return log_lik;
 }
 
+/** 
+ * Partial Cormack-Jolly-Seber function with individual-varying effects for use
+ * with reduce-sum (within-chain parallelisation). See cjs() for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs(data array[] int seq, data int start, data int end, 
+                 data array[,] int y, data array[,] int f_l, matrix log_phi, 
+                 matrix logit_p) {
+  return sum(cjs(y[seq], f_l[seq], log_phi[:, seq], logit_p[:, seq]));
+}
+
 /**
  * Robust design Cormack-Jolly-Seber individual log likelihoods. Function is 
  * overloaded:
@@ -150,6 +162,20 @@ vector cjs_rd(data array[,,] int y, data array[,] int f_l, data array[] int K,
     }
   }
   return log_lik;
+}
+
+/** 
+ * Partial robust design Cormack-Jolly-Seber function with individual-varying 
+ * effects for use with reduce-sum (within-chain parallelisation). See cjs_rd() 
+ * for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs_rd(data array[] int seq, data int start, data int end, 
+                    data array[,,] int y, data array[,] int f_l, 
+                    data array[] int K, data array[] int g, matrix log_phi, 
+                    array[] matrix logit_p) {
+  return sum(cjs_rd(y[seq], f_l[seq], K, g[seq], log_phi[:, seq], logit_p[seq]));
 }
 
 /** 
@@ -268,6 +294,19 @@ vector cjs_ms(data array[,] int y, data array[,] int f_l, array[,] matrix log_H,
     }
   }
   return log_lik;
+}
+
+/** 
+ * Partial multistate Cormack-Jolly-Seber function with individual-varying 
+ * effects for use with reduce-sum (within-chain parallelisation). See cjs_ms() 
+ * for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs_ms(data array[] int seq, data int start, data int end, 
+                    data array[,] int y, data array[,] int f_l, 
+                    array[,] matrix log_H, array[] matrix logit_p) {
+  return sum(cjs_ms(y[seq], f_l[seq], log_H[seq], logit_p[seq]));
 }
 
 /** 
@@ -428,6 +467,20 @@ vector cjs_ms_rd(data array[,,] int y, data array[,] int f_l,
 }
 
 /** 
+ * Partial robust design multistate Cormack-Jolly-Seber function with 
+ * individual-varying effects for use with reduce-sum (within-chain 
+ * parallelisation). See cjs_ms_rd() for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs_ms_rd(data array[] int seq, data int start, data int end, 
+                       data array[,,] int y, data array[,] int f_l, 
+                       data array[] int K, data array[] int g, 
+                       array[,] matrix log_H, array[,] matrix logit_p) {
+  return sum(cjs_ms_rd(y[seq], f_l[seq], K, g[seq], log_H[seq], logit_p[seq]));
+}
+
+/** 
  * Multievent Cormack-Jolly-Seber individual log likelihoods. Function is
  * overloaded (first is much faster without individual effects):
  *  1. log_H and logit_p per survey
@@ -518,6 +571,20 @@ vector cjs_me(data array[,] int y, data array[,] int f_l, array[,] matrix log_H,
   return log_lik;
 }
 
+/** 
+ * Partial multievent Cormack-Jolly-Seber function with individual-varying 
+ * effects for use with reduce-sum (within-chain parallelisation). See cjs_me() 
+ * for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs_me(data array[] int seq, data int start, data int end, 
+                    data array[,] int y, data array[,] int f_l, 
+                    array[,] matrix log_H, array[] matrix logit_p, 
+                    matrix log_E, matrix log_eta) {
+  return sum(cjs_me(y[seq], f_l[seq], log_H[seq], logit_p[seq], log_E, 
+                    log_eta));
+}
 
 /** 
  * Robust design multievent Cormack-Jolly-Seber individual log likelihoods. 
@@ -618,7 +685,7 @@ vector cjs_me_rd(data array[,,] int y, data array[,] int f_l,
     for (j in fp1:J) {
       int K_j = K[j];
       for (s in 1:S) {
-        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[i, j, s, :K_j]));
       }
     }
     for (j in fp1:l) {
@@ -642,4 +709,20 @@ vector cjs_me_rd(data array[,,] int y, data array[,] int f_l,
     }
   }
   return log_lik;
+}
+
+/** 
+ * Partial robust design multievent Cormack-Jolly-Seber function with 
+ * individual-varying effects for use with reduce-sum (within-chain 
+ * parallelisation). See cjs_me_rd() for parameters.
+ *
+ * @return  Partial sum of individual log likelihoods
+ */
+real partial_cjs_me_rd(data array[] int seq, data int start, data int end, 
+                       data array[,,] int y, data array[,] int f_l, 
+                       data array[] int K, data array[] int g, 
+                       array[,] matrix log_H, array[,] matrix logit_p, 
+                       matrix log_E, matrix log_eta) {
+  return sum(cjs_me_rd(y[seq], f_l[seq], K, g[seq], log_H[seq], logit_p[seq],
+                       log_E, log_eta));
 }

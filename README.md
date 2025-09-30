@@ -8,8 +8,10 @@ All models feature the following by default:
 
 2.  Time-varying entry probabilities with an offset for survey length to accommodate unequal survey intervals;
 
-3.  Individual log likelihoods stored in the `log_lik` variable to accommodate PSIS-LOO with the `loo` package.
+3.  Individual log likelihoods stored in the `log_lik` variable to accommodate PSIS-LOO with the `loo` package, and the prior log density stored in the `lprior` variable to accommodate prior sensitivity analysis with the `priorsense` package.
 
-Additionally, all Jolly-Seber models feature `_rng` Stan functions in `js-rng.stanfunctions` that return population sizes, number of entries, and number of exits per survey, as well as the super-population size. In multistate Jolly-Seber models, these quantities are returned by each state.
+Additionally, all Jolly-Seber models feature `_rng` Stan functions in `js-rng.stanfunctions` that return population sizes ($\boldsymbol{N}$), number of entries ($\boldsymbol{B}$), and number of exits ($\boldsymbol{D}$) per survey, as well as the super-population size. In multistate Jolly-Seber models, these quantities are returned by each state.
 
 All configurations were tested with simulation-based calibration (SBC), available in the `sbc` folder.
+
+The `examples` folder contains code and Stan programs to run the examples in the manuscript entitled "An overview of capture–mark–recapture models with efficient Bayesian implementations in Stan".

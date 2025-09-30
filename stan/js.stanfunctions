@@ -1102,7 +1102,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
     for (j in 1:J) {
       int K_j = K[j];
       for (s in 1:S) {
-        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[i, j, s, :K_j]));
       }
     }
     log_eta_1mp[:, :f] = log_eta[:, :f] + log_1mp[:S, :f];
@@ -1177,7 +1177,7 @@ tuple(vector, matrix, matrix, matrix, array[] matrix, array[] matrix)
     for (j in 1:J) {
       int K_j = K[j];
       for (s in 1:S) {
-        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[j, s, :K_j]));
+        log_1mp[s, j] = sum(log1m_inv_logit(logit_p[i, j, s, :K_j]));
       }
     }
     log_eta_1mp = log_eta + log_1mp[:S];

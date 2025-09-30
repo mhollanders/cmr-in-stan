@@ -8,11 +8,14 @@ data {
   int<lower=2> S;  // number of alive states
   vector<lower=0>[J - 1] tau;  // survey intervals
   array[I, J] int<lower=0, upper=S> y;  // detection history
+  int<lower=0> grainsize;  // threading
 }
 
 transformed data {
   int Jm1 = J - 1, Sm1 = S - 1, Sp1 = S + 1;
   array[I, 2] int f_l = first_last(y);
+  array[I] int seq = linspaced_int_array(I, 1, I);
+  vector[Jm1] tau_scl = tau / mean(tau);
 }
 
 parameters {
@@ -24,29 +27,33 @@ parameters {
 }
 
 transformed parameters {
-  real lprior = gamma_lpdf(h | 1, 1) + gamma_lpdf(q | 1, 1)
+  real lprior = gamma_lpdf(h | 1, 3) + gamma_lpdf(q | 1, 3)
                 + beta_lpdf(to_vector(p) | 1, 1);
 }
 
 model {
   matrix[Sp1, Sp1] Q = rate_matrix(h, q);
   matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
-  matrix[S, J] log_eta = log(eta);  
+  matrix[S, J] log_eta = log(eta);
   array[Jm1] matrix[Sp1, Sp1] log_H;
   for (j in 1:Jm1) {
-    log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+    log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
     log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
   }
   matrix[S, Jm1] logit_p = logit(p);
+  target += cjs_me(y, f_l, log_H, logit_p, log_E, log_eta);
   /* Code change for individual effects
   array[Jm1] matrix[Sp1, Sp1] log_H_j;
   for (j in 1:Jm1) {
-    log_H_j[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+    log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
     log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
   }
   array[I, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I);
-  array[I] matrix[S, Jm1] logit_p = rep_array(logit(p), I); // */
-  target += sum(cjs_me(y, f_l, log_H, logit_p, log_E, log_eta));
+  array[I] matrix[S, Jm1] logit_p = rep_array(logit(p), I);
+  target += grainsize ? 
+            reduce_sum(partial_cjs_me, seq, grainsize, y, f_l, log_H, logit_p,
+                       log_E, log_eta)
+            : sum(cjs_me(y, f_l, log_H, logit_p, log_E, log_eta)); // */
   target += lprior;
 }
 
@@ -58,14 +65,14 @@ generated quantities {
     matrix[S, J] log_eta = log(eta);  
     array[Jm1] matrix[Sp1, Sp1] log_H;
     for (j in 1:Jm1) {
-      log_H[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+      log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
       log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
     }
     matrix[S, Jm1] logit_p = logit(p);
     /* Code change for individual effects
     array[Jm1] matrix[Sp1, Sp1] log_H_j;
     for (j in 1:Jm1) {
-      log_H_j[j, :S] = log(matrix_exp(Q * tau[j])[:S]);
+      log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
       log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
     }
     array[I, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I);

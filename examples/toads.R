@@ -19,9 +19,9 @@ stan_data <- list(I = nrow(dh),
 
 # fit and compare
 mods <- list(cmdstan_model(here("stan/js.stan")),
-             cmdstan_model(here("analysis/js0.stan")))
+             cmdstan_model(here("examples/js0.stan")))
 fits <- map(mods, 
-            ~.$sample(stan_data, chains = getOption("mc.cores"),
+            ~.$sample(stan_data, init = 0.1, chains = getOption("mc.cores"),
                       iter_warmup = 200, iter_sampling = 500, refresh = 0,
                       show_exceptions = F))
 map(fits, ~.$loo()) |> loo_compare()
@@ -48,4 +48,4 @@ map(fits,
                                                   limits = c(0, 175), 
                                                   expand = c(0, 0)))) + 
   labs(x = "Survey", y = "95% HDI")
-ggsave(here("figs/fig-toad.png"), width = 6, height = 5, dpi = 600)
+ggsave(here("figs/fig-toad.jpg"), width = 6, height = 5, dpi = 600)

@@ -6,10 +6,10 @@ options(mc.cores = 8)
 theme_set(my_theme())
 
 # read or prepare data for Stan
-file_name <- here("examples/fleayi-stan-data.rds")
+file_name <- here("examples/data/fleayi-stan-data.rds")
 if (file.exists(file_name)) {
   stan_data <- read_rds(file_name)
-  dates <- read_rds(here("examples/fleayi-dates.rds"))
+  dates <- read_rds(here("examples/data/fleayi-dates.rds"))
 } else {
   # prepare and modify detection histories
   I <- c(462, 136, 88)
@@ -105,8 +105,8 @@ if (file.exists(file_name)) {
   write_rds(stan_data, file_name)
 }
 
-# fit or read object
-fit_name <- here("analysis/fleayi-fit.rds")
+# fit
+fit_name <- here("examples/fit.rds")
 if (file.exists(fit_name)) {
   fit <- read_rds(fit_name)
 } else {
@@ -114,7 +114,7 @@ if (file.exists(fit_name)) {
   fit <- mod$sample(stan_data, init = 0.1, chains = getOption("mc.cores"), 
                     iter_warmup = 500, iter_sampling = 500, 
                     show_exceptions = F)
-  fit$save_object(here("analysis/fleayi-fit.rds"))
+  fit$save_object(fit_name)
 }
 
 # plots

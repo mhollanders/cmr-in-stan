@@ -15,7 +15,7 @@ transformed data {
   int Jm1 = J - 1, Sm1 = S - 1;
   array[I, 2] int f_l = first_last(y);
   array[I] int seq = linspaced_int_array(I, 1, I);
-  vector[Jm1] tau_scl = tau / mean(tau);
+  vector[Jm1] tau_scl = tau / exp(mean(log(tau)));
 }
 
 parameters {

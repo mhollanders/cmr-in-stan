@@ -5,7 +5,7 @@ functions {
 
 data {
   int<lower=1> I,  // number of individuals
-               J,  // number of surveys
+               J,  // number of primaries
                K_max;  // maximum number of secondaries
   array[J] int<lower=1, upper=K_max> K;  // number of secondaries
   int<lower=2> S;  // number of alive states
@@ -19,7 +19,7 @@ transformed data {
   array[I, 2] int f_l = first_last(y);
   array[I] int g = first_sec(y, f_l[:, 1]);
   array[I] int seq = linspaced_int_array(I, 1, I);
-  vector[Jm1] tau_scl = tau / mean(tau);
+  vector[Jm1] tau_scl = tau / exp(mean(log(tau)));
 }
 
 parameters {

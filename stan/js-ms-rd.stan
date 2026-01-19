@@ -11,36 +11,44 @@ data {
   array[J] int<lower=1, upper=K_max> K;  // number of secondaries
   int<lower=2> S;  // number of alive states
   vector<lower=0>[J - 1] tau;  // survey intervals
-  array[I, J, K_max] int<lower=0, upper=S + 1> y;  // detection history
+  array[I, J, K_max] int<lower=0, upper=S> y;  // detection history
   int<lower=1> I_aug;  // number of augmented individuals
+  int<lower=0, upper=1> dirichlet;  // logistic-normal (0) or Dirichlet (1) entry
 }
 
 transformed data {
   int I_all = I + I_aug, Jm1 = J - 1, Sm1 = S - 1, Sp1 = S + 1;
   array[I, 2] int f_l = first_last(y);
-  vector[Jm1] tau_scl = tau / mean(tau), log_tau_scl = log(tau_scl);
+  vector[Jm1] tau_scl = tau / exp(mean(log(tau))), log_tau_scl = log(tau_scl);
 }
 
 parameters {
   vector<lower=0>[S] h;  // mortality hazard rates
   row_vector<lower=0>[S * Sm1] q;  // transition rates
   matrix<lower=0, upper=1>[S, J] p;  // detection probabilities
-  real<lower=0> mu;  // baseline entry rate
-  simplex[J] beta;  // entry probabilities
+  real<lower=0> mu;  // Dirichlet concentration or logistic-normal scale
+  real gamma;  // first entry offset
+  sum_to_zero_vector[J] u;  // unconstrained entries
   column_stochastic_matrix[S, J] eta;  // entry state probabilities
   real<lower=0, upper=1> psi;  // inclusion probability
 }
 
 transformed parameters {
-  vector[J] log_alpha = zeros_vector(J);
-  log_alpha[2:] += log(mu) + log_tau_scl;
+  vector[J] log_alpha = append_row(gamma, log_tau_scl), 
+            log_beta;
+  if (dirichlet) {
+    log_alpha += log(mu);
+    log_beta = sum_to_zero_log_simplex_jacobian(u);
+  } else {
+    log_alpha += mu * u;
+    log_beta = log_softmax(log_alpha);
+  }
   real lprior = gamma_lpdf(h | 1, 3) + gamma_lpdf(q | 1, 3)
-                + beta_lpdf(to_vector(p) | 1, 1) 
-                + gamma_lpdf(mu | 1, 1) + dirichlet_lpdf(beta | exp(log_alpha));
+                + beta_lpdf(to_vector(p) | 1, 1)
+                + gamma_lpdf(mu | 1, 1) + std_normal_lpdf(gamma);
 }
 
 model {
-  vector[J] log_beta = log(beta);
   matrix[S, J] log_eta = log(eta);
   array[Jm1] matrix[S, S] log_H;
   for (j in 1:Jm1) {
@@ -73,6 +81,9 @@ model {
     target += log_sum_exp(lp.2[:, i]);
   } // */
   target += lprior;
+  target += dirichlet ?
+            dirichlet_lupdf(exp(log_beta) | exp(log_alpha)) 
+            : std_normal_lupdf(u);
 }
 
 generated quantities {
@@ -80,7 +91,6 @@ generated quantities {
   array[S, J] int N, B, D;
   int N_super;
   {
-    vector[J] log_beta = log(beta);
     matrix[S, J] log_eta = log(eta);
     matrix[Sp1, Sp1] Q = rate_matrix(h, q);
     array[Jm1] matrix[Sp1, Sp1] log_H;

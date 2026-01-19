@@ -12,31 +12,39 @@ data {
   array[J] int<lower=0, upper=K_max> K;  // number of secondaries
   array[I, J, K_max] int<lower=0, upper=1> y;  // detection history
   int<lower=1> I_aug;  // number of augmented individuals
+  int<lower=0, upper=1> dirichlet;  // logistic-normal (0) or Dirichlet (1) entry
 }
 
 transformed data {
   int I_all = I + I_aug, Jm1 = J - 1;
   array[I, 2] int f_l = first_last(y);
-  vector[Jm1] tau_scl = tau / mean(tau), log_tau_scl = log(tau_scl);
+  vector[Jm1] tau_scl = tau / exp(mean(log(tau))), log_tau_scl = log(tau_scl);
 }
 
 parameters {
   real<lower=0> h;  // mortality hazard rate
   row_vector<lower=0, upper=1>[J] p;  // detection probabilities
-  real<lower=0> mu;  // baseline entry rate
-  simplex[J] beta;  // entry probabilities
+  real<lower=0> mu;  // Dirichlet concentration or logistic-normal scale
+  real gamma;  // first entry offset
+  sum_to_zero_vector[J] u;  // unconstrained entries
   real<lower=0, upper=1> psi;  // inclusion probability
 }
 
 transformed parameters {
-  vector[J] log_alpha = zeros_vector(J);
-  log_alpha[2:] += log(mu) + log_tau_scl;
-  real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1)
-                + gamma_lpdf(mu | 1, 1) + dirichlet_lpdf(beta | exp(log_alpha));  
+  vector[J] log_alpha = append_row(gamma, log_tau_scl), 
+            log_beta;
+  if (dirichlet) {
+    log_alpha += log(mu);
+    log_beta = sum_to_zero_log_simplex_jacobian(u);
+  } else {
+    log_alpha += mu * u;
+    log_beta = log_softmax(log_alpha);
+  }
+  real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1) 
+                + gamma_lpdf(mu | 1, 1) + std_normal_lpdf(gamma);
 }
 
 model {
-  vector[J] log_beta = log(beta);
   vector[Jm1] log_phi = -h * tau;
   matrix[K_max, J] logit_p = rep_matrix(logit(p), K_max);
   tuple(vector[I], vector[2], matrix[J, I], vector[J]) lp;
@@ -52,7 +60,10 @@ model {
   for (i in 1:I_aug) {
     target += log_sum_exp(lp.2[:, i]);
   } // */
-  target += lprior;  
+  target += lprior;
+  target += dirichlet ? 
+            dirichlet_lupdf(exp(log_beta) | exp(log_alpha)) 
+            : std_normal_lupdf(u);
 }
 
 generated quantities {
@@ -60,7 +71,6 @@ generated quantities {
   array[J] int N, B, D;
   int N_super;
   {
-    vector[J] log_beta = log(beta);
     vector[Jm1] log_phi = -h * tau;
     matrix[K_max, J] logit_p = rep_matrix(logit(p), K_max);
     tuple(vector[I], vector[2], matrix[J, I], vector[J]) lp =

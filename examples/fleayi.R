@@ -105,20 +105,87 @@ if (file.exists(file_name)) {
   write_rds(stan_data, file_name)
 }
 
+mods <- list(cmdstan_model(here("examples/js-ms-rd-fleayi.stan")),
+             cmdstan_model(here("examples/js-ms-rd-fleayi2.stan")),
+             cmdstan_model(here("examples/js-ms-rd-fleayi3.stan")))
+fits <- map(mods, 
+            ~.$sample(stan_data, init = 0.1, chains = getOption("mc.cores"), 
+                      iter_warmup = 200, iter_sampling = 500, 
+                      show_exceptions = F))
+loos <- map(fits, ~.$loo())
+loo_compare(loos)
+
+map(fits, ~.$time())
+
+fits[[1]]$draws("log_alpha") |> mcmc_trace()
+
 # fit
 fit_name <- here("examples/fit.rds")
 if (file.exists(fit_name)) {
   fit <- read_rds(fit_name)
 } else {
   mod <- cmdstan_model(here("examples/js-ms-rd-fleayi.stan"))
-  fit <- mod$sample(stan_data, init = 0.1, chains = getOption("mc.cores"), 
-                    iter_warmup = 500, iter_sampling = 500, 
-                    show_exceptions = F)
+  fit4 <- mod$sample(stan_data, init = 0.1, chains = getOption("mc.cores"), 
+                    iter_warmup = 200, iter_sampling = 200, 
+                    show_exceptions = T)
   fit$save_object(fit_name)
 }
 
-# plots
+fit3$draws("log_mu_m") |> mcmc_intervals()
+
+map(fits, ~spread_rvars(., log_beta[j, m])) |> 
+  list_rbind(names_to = "mod") |> 
+  left_join(dates)
+
+# beta
+bind_rows(spread_rvars(fits[[1]], beta[j, m]) |> 
+            mutate(mod = "Dirichlet"),
+          spread_rvars(fits[[2]], log_beta[j, m]) |> 
+            mutate(mod = "LN GP",
+                   beta = exp(log_beta)) |> 
+            select(-log_beta)) |> 
+  left_join(dates) |> 
+  drop_na() |> 
+  ggplot(aes(date, ydist = beta)) + 
+  facet_wrap(~ site, ncol = 1) + 
+  stat_pointinterval(aes(colour = mod), 
+                     position = position_dodge(width = 20))
+
+fit3 |> 
+  spread_rvars(log_beta[j, m]) |> 
+  left_join(dates) |> 
+  drop_na() |> 
+  ggplot(aes(date, ydist = exp(log_beta))) + 
+  facet_wrap(~ site, ncol = 1) + 
+  stat_pointinterval()
+
 fit |> 
+  spread_rvars(log_alpha[j, m]) |> 
+  left_join(dates) |> 
+  drop_na() |> 
+  ggplot(aes(date, ydist = log_alpha)) + 
+  facet_wrap(~ site, ncol = 1) + 
+  stat_pointinterval()
+
+fit$draws("gp_rho") |> mcmc_intervals()
+  
+
+# log_alpha
+bind_rows(spread_rvars(fits[[1]], log_alpha[j, m]) |> 
+            mutate(mod = "Dirichlet GP"),
+          spread_rvars(fits[[2]], log_alpha[j, m]) |> 
+            mutate(mod = "LN GP"),
+          spread_rvars(fits[[3]], log_alpha[j, m]) |> 
+            mutate(mod = "Dirichlet")) |> 
+  left_join(dates) |> 
+  drop_na() |> 
+  ggplot(aes(date, ydist = log_alpha)) + 
+  facet_wrap(~ site, ncol = 1) + 
+  stat_pointinterval(aes(colour = mod), 
+                     position = position_dodge(width = 20))
+
+# plots
+fit2 |> 
   spread_rvars(N[m, s, j]) |> 
   mutate(N_sum = rvar_sum(N), .by = c(m, j)) |> 
   mutate(prev = N / N_sum) |> 
@@ -156,7 +223,7 @@ fit |>
   labs(x = "Primary", y = "95% HDI")
 ggsave(here("figs/fig-fleayi.jpg"), width = 6, height = 6, dpi = 600)
 
-fit |> 
+fits[[2]] |> 
   spread_rvars(gp[m, j, d]) |> 
   left_join(dates |> 
               distinct(m, j, date)) |> 
@@ -178,3 +245,5 @@ fit |>
   theme(legend.position = "inside",
         legend.position.inside = c(0.75, 0.15))
 ggsave(here("figs/fig-gp.jpg"), width = 6, height = 6, dpi = 600)
+
+fits[[2]]$draws("gp_rho") |> mcmc_intervals()

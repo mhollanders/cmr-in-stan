@@ -37,7 +37,7 @@ transformed data {
     }
     K_sum += sum(K[m]);
   }
-  real m_z_scale = inv(sqrt(1 - inv(M))), s_z_scale = inv(sqrt(1 - inv(S)));
+  real m_z_scale = inv(sqrt(1 - inv(M)));
 }
 
 parameters {
@@ -51,13 +51,14 @@ parameters {
   real<lower=0, upper=1> p_a;  // detection probability intercept
   real<lower=0> logit_p_t;  // detection site effect scale
   sum_to_zero_vector[M] logit_p_z;  // detection site effects
-  vector<lower=0>[M] mu;  // entry rate concentrations
-  vector<lower=0, upper=1>[J_sum - M] u;  // unnormalised entry probabilities
+  real<lower=0> mu_a, log_mu_t;  // entry rate scales
+  sum_to_zero_vector[M] log_mu_z;  // entry site effects
+  vector[J_sum - M] u;  // unnormalised entry probabilities
   vector<lower=0, upper=1>[M] psi;  // inclusion probabilities
   vector<lower=0>[5] gp_t;  // GP scales
   cholesky_factor_corr[5] gp_O_L;  // GP correlations 
   real<lower=0> gp_ell;  // GP length-scale
-  matrix[J_sum, 5] gp_z;  // GP z-scores
+  matrix[J_sum - M, 5] gp_z_raw;  // GP z-scores
 }
 
 transformed parameters {
@@ -68,51 +69,49 @@ transformed parameters {
   for (t in 1:T) {
     log_q_m[:, t] += log_q_t[t] * log_q_z[t];
   }
-  vector[M] logit_p_m = logit(p_a) + logit_p_t * logit_p_z;
+  vector[M] logit_p_m = logit(p_a) + logit_p_t * logit_p_z,
+            log_mu_m = log(mu_a) + log_mu_t * log_mu_z;
   
   // primary-level parameters
-  array[M] matrix[J_max, 5] gp;
+  array[M] matrix[J_max, 5] gp_z, gp;
   array[M] matrix[S, J_max - 1] h;
   array[M] matrix[J_max, T] q;
   array[M] matrix[S, J_max] eta;
   array[M, J_max] matrix[S, K_max] logit_p;
-  matrix[J_max, M] log_alpha = rep_matrix(0, J_max, M), beta;
+  matrix[J_max, M] log_alpha = append_row(log_mu_m', log_tau_scl), log_beta;
   for (m in 1:M) {
-    gp[m, :J[m]] = cholesky_decompose(gp_exp_quad_cov(dates[m, :J[m]], 1, gp_ell))
-                   * gp_z[sum(J[:m - 1]) + 1:sum(J[:m])]
-                   * diag_post_multiply(gp_O_L', gp_t);
-    h[m, :, :Jm1[m]] = exp(rep_matrix(log_h_m[:, m], Jm1[m])
-                           + rep_matrix(gp[m, 2:J[m], 1]', S));
-    q[m, :J[m]] = exp(rep_matrix(log_q_m[m], J[m]) + gp[m, :J[m], 2:3]);
-    logit_p[m, :J[m]] = rep_array(rep_matrix(logit_p_m[m], S, K_max), J[m]);
-    for (j in 1:J[m]) {
+    int J_m = J[m], Jm1_m = Jm1[m];
+    for (d in 1:5) {
+      gp_z[m, :J_m, d] = sum_to_zero_jacobian(segment(gp_z_raw[:, d], 
+                                                      m == 1 ? 1 : Jm1[m - 1] + 1, 
+                                                      Jm1_m));
+    }
+    gp[m, :J_m] = cholesky_decompose(gp_exp_quad_cov(dates[m, :J_m], 1, gp_ell))
+                  * gp_z[m, :J_m]
+                  * diag_post_multiply(gp_O_L', gp_t);
+    h[m, :, :Jm1_m] = exp(rep_matrix(log_h_m[:, m], Jm1_m)
+                          + rep_matrix(gp[m, 2:J_m, 1]', S));
+    q[m, :J_m] = exp(rep_matrix(log_q_m[m], J_m) + gp[m, :J_m, 2:3]);
+    logit_p[m, :J_m] = rep_array(rep_matrix(logit_p_m[m], S, K_max), J_m);
+    for (j in 1:J_m) {
       eta[m, :, j] = reverse(q[m, j] / sum(q[m, j]))';
       logit_p[m, j] += gp[m, j, 4];
     }
-    log_alpha[2:J[m], m] = log(mu[m]) + log_tau_scl[:Jm1[m], m]
-                           + gp[m, 2:J[m], 5];
-    beta[:J[m], m] = simplex_jacobian(u[sum(Jm1[:m - 1]) + 1:sum(Jm1[:m])]);
+    log_alpha[:J_m, m] += gp[m, :J_m, 5];
+    log_beta[:J_m, m] = log_softmax(log_alpha[:J_m, m]);
   }
   real lprior = gamma_lpdf(h_a | 1, 3)
                 + std_normal_lpdf(log_h_b)
                 + exponential_lpdf(log_h_t | 2)
-                + normal_lpdf(log_h_z[1] | 0, m_z_scale)
-                + normal_lpdf(log_h_z[2] | 0, m_z_scale)
                 + gamma_lpdf(q_a | 1, 3)
                 + exponential_lpdf(log_q_t | 2)
-                + normal_lpdf(log_q_z[1] | 0, m_z_scale)
-                + normal_lpdf(log_q_z[2] | 0, m_z_scale)
                 + beta_lpdf(p_a | 1, 2)
                 + exponential_lpdf(logit_p_t | 2) 
-                + normal_lpdf(logit_p_z | 0, m_z_scale)
-                + gamma_lpdf(mu | 1, 1)
+                + gamma_lpdf(mu_a | 1, 1)
+                + exponential_lpdf(log_mu_t | 2)
                 + exponential_lpdf(gp_t | 2)
                 + lkj_corr_cholesky_lpdf(gp_O_L | 1)
-                + inv_gamma_lpdf(gp_ell | 1, 1)
-                + std_normal_lpdf(to_vector(gp_z));
-  for (m in 1:M) {
-    lprior += dirichlet_lpdf(beta[:J[m], m] | exp(log_alpha[:J[m], m]));
-  }
+                + inv_gamma_lpdf(gp_ell | 1, 1);
 }
 
 model {
@@ -125,11 +124,18 @@ model {
     tuple(vector[I[m]], vector[2], matrix[J[m], I[m]], vector[J[m]], 
           array[I[m]] matrix[S, J[m]], matrix[S, J[m]]) lp =
       js_ms_rd(y[m, :I[m], :J[m]], f_l[m, :I[m]], K[m, :J[m]], log_H, 
-               logit_p[m, :J[m]], log_softmax(log_alpha[:J[m], m]), log(eta[m, :, :J[m]]), 
+               logit_p[m, :J[m]], log_beta[:J[m], m], log(eta[m, :, :J[m]]), 
                psi[m]);
     target += sum(lp.1) + I_aug[m] * log_sum_exp(lp.2);
+    target += std_normal_lupdf(to_vector(gp_z[m, :J[m]]));
   }
   target += lprior;
+  target += normal_lupdf(log_h_z[1] | 0, m_z_scale)
+            + normal_lupdf(log_h_z[2] | 0, m_z_scale)
+            + normal_lupdf(log_q_z[1] | 0, m_z_scale)
+            + normal_lupdf(log_q_z[2] | 0, m_z_scale)
+            + normal_lupdf(logit_p_z | 0, m_z_scale)
+            + normal_lupdf(log_mu_z | 0, m_z_scale);
 }
 
 generated quantities {
@@ -150,7 +156,7 @@ generated quantities {
       tuple(vector[I[m]], vector[2], matrix[J[m], I[m]], vector[J[m]],
           array[I[m]] matrix[S, J[m]], matrix[S, J[m]]) lp =
         js_ms_rd(y[m, :I[m], :J[m]], f_l[m, :I[m]], K[m, :J[m]], log_H[:, :S, :S],
-                 logit_p[m, :J[m]], log_softmax(log_alpha[:J[m], m]), log(eta[m, :, :J[m]]),
+                 logit_p[m, :J[m]], log_beta[:J[m], m], log(eta[m, :, :J[m]]),
                  psi[m]);
       log_lik[sum(I[:m - 1]) + 1:sum(I[:m])] = lp.1;
       tuple(array[S, J[m]] int, array[S, J[m]] int, array[S, J[m]] int, int)
@@ -162,5 +168,5 @@ generated quantities {
       N_super[m] = latent.4;
     }
   }
-  matrix[5, 5] gp_rho = multiply_lower_tri_self_transpose(gp_O_L);
+  matrix[5, 5] gp_O = multiply_lower_tri_self_transpose(gp_O_L);
 }

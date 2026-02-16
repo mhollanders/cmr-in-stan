@@ -1,0 +1,79 @@
+functions {
+  #include ../stan/util.stanfunctions
+  #include ../stan/js.stanfunctions
+  #include ../stan/js-rng.stanfunctions
+}
+
+data {
+  int<lower=1> I, J;  // number of individuals and surveys
+  vector<lower=0>[J - 1] tau;  // survey intervals
+  array[I, J] int<lower=0, upper=1> y;  // detection history
+  int<lower=1> I_aug;  // number of augmented individuals
+  int<lower=0, upper=1> dirichlet,  // logistic-normal (0) or Dirichlet (1) entry
+                        uniform,  // uniform prior on entries
+                        intervals;  // ignore intervals (0) or not (1)
+}
+
+transformed data {
+  int I_all = I + I_aug, Jm1 = J - 1;
+  array[I, 2] int f_l = first_last(y);
+  vector[Jm1] tau_scl = tau / exp(mean(log(tau))), log_tau_scl = log(tau_scl);
+}
+
+parameters {
+  real<lower=0> h;  // mortality hazard rate
+  real<lower=0, upper=1> p;  // detection probability
+  real<lower=0> mu;  // Dirichlet concentration or logistic-normal scale
+  real gamma;  // first entry offset
+  sum_to_zero_vector[J] u;  // unconstrained entries
+  real<lower=0, upper=1> psi;  // inclusion probability
+}
+
+transformed parameters {
+  vector[J] log_alpha = zeros_vector(J), log_beta;
+  if (!uniform) {
+    if (intervals) {
+      log_alpha += append_row(gamma, log_tau_scl);
+    }
+    if (dirichlet) {
+      log_alpha += log(mu);
+      log_beta = sum_to_zero_log_simplex_jacobian(u);
+    } else {
+      log_alpha += mu * u;
+      log_beta = log_softmax(log_alpha);
+    }
+  }
+  real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1) 
+                + gamma_lpdf(mu | 1, 1) + std_normal_lpdf(gamma);
+}
+
+model {
+  vector[Jm1] log_phi = -h * tau;
+  vector[J] logit_p = rep_vector(logit(p), J);
+  tuple(vector[I], vector[2], matrix[J, I], vector[J]) lp =
+    js(y, f_l, log_phi, logit_p, log_beta, psi);
+  target += sum(lp.1) + I_aug * log_sum_exp(lp.2);
+  target += lprior;
+  target += dirichlet ? 
+            dirichlet_lupdf(exp(log_beta) | exp(log_alpha))
+            : std_normal_lupdf(u);
+}
+
+generated quantities {
+  vector[I] log_lik;
+  array[J] int N, B, D;
+  int N_super;
+  {
+    vector[Jm1] log_phi = -h * tau;
+    vector[J] logit_p = rep_vector(logit(p), J);
+    tuple(vector[I], vector[2], matrix[J, I], vector[J]) lp =
+      js(y, f_l, log_phi, logit_p, log_beta, psi);
+    log_lik = lp.1;
+    tuple(array[J] int, array[J] int, array[J] int, int) latent =
+      js_rng(lp, f_l, log_phi, logit_p, I_aug);
+    N = latent.1;
+    B = latent.2;
+    D = latent.3;
+    N_super = latent.4;
+  }
+}

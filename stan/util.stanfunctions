@@ -196,7 +196,7 @@ matrix rate_matrix(vector h, row_vector q) {
  *
  * @return   Lower triangular row stochastic matrix
  */
-matrix triangular_row_stochastic_matrix(int S, vector u) {
+matrix triangular_row_stochastic_matrix_jacobian(int S, vector u) {
   matrix[S, S] D = rep_matrix(0, S, S);
   D[1, 1] = 1;
   int idx = 1;
@@ -224,4 +224,20 @@ matrix triangular_bidiagonal_stochastic_matrix(vector delta) {
     E[s, sm1:s] = [ 1 - delta[sm1], delta[sm1] ];
   }
   return E;
+}
+
+/** 
+ * Simplex constrain a zero-sum vector and increment Jacobian adjustment.
+ * Differs from simplex_jacobian() in that it does not first 
+ * sum_to_zero_constrain a free vector and returns the log simplex.
+ *
+ * @param u  Sum-to-zero vector
+ *
+ * @return   Log simplex with Jacobian adjustment
+ */
+vector sum_to_zero_log_simplex_jacobian(vector u) {
+  int J = size(u);
+  real r = log_sum_exp(u);
+  jacobian += sum(u) - J * r;
+  return u - r;
 }

@@ -10,6 +10,7 @@ data {
   array[J] int<lower=1, upper=K_max> K;  // number of secondaries
   vector<lower=0>[J - 1] tau;  // survey intervals
   array[I, J, K_max] int<lower=0, upper=1> y;  // detection history
+  int<lower=0, upper=1> ind;  // survey (0) or individual-level (1) parameters
   int<lower=0> grainsize;  // threading
 }
 
@@ -26,33 +27,47 @@ parameters {
 }
 
 transformed parameters {
+  // priors
   real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1);
 }
 
 model {
-  vector[Jm1] log_phi = -h * tau;
-  matrix[K_max, J] logit_p = rep_matrix(logit(p), K_max);
-  target += cjs_rd(y, f_l, K, g, log_phi, logit_p);
-  /* Code change for individual effects
-  matrix[Jm1, I] log_phi = rep_matrix(-h * tau, I);
-  array[I] matrix[K_max, J] logit_p =
-    rep_array(rep_matrix(logit(p), K_max), I);
-  target += grainsize ?
-            reduce_sum(partial_cjs_rd, seq, grainsize, y, f_l, K, g, log_phi,
-                       logit_p)
-            : sum(cjs_rd(y, f_l, K, g, log_phi, logit_p)); // */
   target += lprior;
+  
+  // log survival probabilities and detection logits
+  vector[Jm1] log_phi_j = -h * tau;
+  matrix[K_max, J] logit_p_j;
+  for (j in 1:J) {
+    logit_p_j[:K[j], j] = rep_vector(logit(p[j]), K[j]);
+  }
+  
+  // likelihood with individual or survey-level parameters
+  if (ind) {
+    matrix[Jm1, I] log_phi_i = rep_matrix(log_phi_j, I);
+    array[I] matrix[K_max, J] logit_p_i = rep_array(logit_p_j, I);
+    target += grainsize ?
+              reduce_sum(partial_cjs_rd, seq, grainsize, y, f_l, K, g,
+                         log_phi_i, logit_p_i)
+              : sum(cjs_rd(y, f_l, K, g, log_phi_i, logit_p_i));
+  } else {
+    target += cjs_rd(y, f_l, K, g, log_phi_j, logit_p_j);
+  }
 }
 
 generated quantities {
   vector[I] log_lik;
   {
-    vector[Jm1] log_phi = -h * tau;
-    matrix[K_max, J] logit_p = rep_matrix(logit(p), K_max);
-    /* Code change for individual effects
-    matrix[Jm1, I] log_phi = rep_matrix(-h * tau, I);
-    array[I] matrix[K_max, J] logit_p =
-      rep_array(rep_matrix(logit(p), K_max), I); // */
-    log_lik = cjs_rd(y, f_l, K, g, log_phi, logit_p);
+    vector[Jm1] log_phi_j = -h * tau;
+    matrix[K_max, J] logit_p_j;
+    for (j in 1:J) {
+      logit_p_j[:K[j], j] = rep_vector(logit(p[j]), K[j]);
+    }
+    if (ind) {
+      matrix[Jm1, I] log_phi_i = rep_matrix(log_phi_j, I);
+      array[I] matrix[K_max, J] logit_p_i = rep_array(logit_p_j, I);
+      log_lik = cjs_rd(y, f_l, K, g, log_phi_i, logit_p_i);
+    } else {
+      log_lik = cjs_rd(y, f_l, K, g, log_phi_j, logit_p_j);
+    }
   }
 }

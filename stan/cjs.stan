@@ -7,6 +7,7 @@ data {
   int<lower=1> I, J;  // number of individuals and surveys
   vector<lower=0>[J - 1] tau;  // survey intervals
   array[I, J] int<lower=0, upper=1> y;  // detection history
+  int<lower=0, upper=1> ind;  // survey (0) or individual-level (1) parameters
   int<lower=0> grainsize;  // threading
 }
 
@@ -22,28 +23,41 @@ parameters {
 }
 
 transformed parameters {
+  // priors
   real lprior = gamma_lpdf(h | 1, 3) + beta_lpdf(p | 1, 1);
 }
 
 model {
-  vector[Jm1] log_phi = -h * tau, logit_p = logit(p);
-  target += cjs(y, f_l, log_phi, logit_p);
-  /* Code change for individual effects
-  matrix[Jm1, I] log_phi = rep_matrix(-h * tau, I),
-                 logit_p = rep_matrix(logit(p), I);
-  target += grainsize ?
-            reduce_sum(partial_cjs, seq, grainsize, y, f_l, log_phi, logit_p)
-            : sum(cjs(y, f_l, log_phi, logit_p)); // */
   target += lprior;
+  
+  // log survival probabilities and detection logits
+  vector[Jm1] log_phi_j = -h * tau,
+              logit_p_j = logit(p);
+  
+  // likelihood with individual or survey-level parameters
+  if (ind) {
+    matrix[Jm1, I] log_phi_i = rep_matrix(log_phi_j, I),
+                   logit_p_i = rep_matrix(logit_p_j, I);
+    target += grainsize ?
+              reduce_sum(partial_cjs, seq, grainsize, y, f_l, log_phi_i, 
+                         logit_p_i)
+              : sum(cjs(y, f_l, log_phi_i, logit_p_i));
+  } else {
+    target += cjs(y, f_l, log_phi_j, logit_p_j);
+  }
 }
 
 generated quantities {
   vector[I] log_lik;
   {
-    vector[Jm1] log_phi = -h * tau, logit_p = logit(p);
-    /* Code change for individual effects
-    matrix[Jm1, I] log_phi = rep_matrix(-h * tau, I),
-                   logit_p = rep_matrix(logit(p), I); // */
-    log_lik = cjs(y, f_l, log_phi, logit_p);
+    vector[Jm1] log_phi_j = -h * tau,
+                logit_p_j = logit(p);
+    if (ind) {
+      matrix[Jm1, I] log_phi_i = rep_matrix(log_phi_j, I),
+                     logit_p_i = rep_matrix(logit_p_j, I);
+      log_lik = cjs(y, f_l, log_phi_i, logit_p_i);
+    } else {
+      log_lik = cjs(y, f_l, log_phi_j, logit_p_j);
+    }
   }
 }

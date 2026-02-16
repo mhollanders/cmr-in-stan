@@ -21,10 +21,10 @@ my_theme <- function(base_size = 10,
           panel.background = element_rect(fill = NA, colour = NA),
           panel.border = element_rect(fill = NA, colour = my_black),
           panel.grid = element_blank(),
-          plot.margin = margin(10, 10, 10, 10),
+          plot.margin = margin(10),
           plot.title = element_text(size = rel(1.1), hjust = 0, vjust = 1, margin = margin(b = half_line)),
           strip.background = element_rect(fill = my_black, colour = my_black, linewidth = base_size / 2), 
-          strip.text = element_text(colour = "white", size = rel(0.9), margin = margin(rep(0.8 * half_line, 4))),
+          strip.text = element_text(colour = "white", size = rel(0.9), margin = margin(0.8)),
           complete = TRUE)
 }
 
@@ -100,14 +100,20 @@ rdirch <- function(n = 1, alpha) {
   D <- length(alpha)
   out <- matrix(NA, n, D)
   for (i in 1:n) {
-    raw <- rgamma(D, alpha, 1)
-    out[i, ] <- raw / sum(raw)
+    u <- rgamma(D, alpha, 1)
+    out[i, ] <- u / sum(u)
   }
   if (n == 1) {
     out[1, ]
   } else {
     out
   }
+}
+
+# softmax
+softmax <- function(x) {
+  exp_x <- exp(x)
+  exp_x / sum(exp_x)
 }
 
 # plot ECDF-diff and estimates plots together

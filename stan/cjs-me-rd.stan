@@ -11,6 +11,7 @@ data {
   int<lower=2> S;  // number of alive states
   vector<lower=0>[J - 1] tau;  // survey intervals
   array[I, J, K_max] int<lower=0, upper=S> y;  // detection history
+  int<lower=0, upper=1> ind;  // survey (0) or individual-level (1) parameters
   int<lower=0> grainsize;  // threading
 }
 
@@ -26,79 +27,74 @@ parameters {
   vector<lower=0>[S] h;  // mortality hazard rates
   row_vector<lower=0>[S * Sm1] q;  // transition rates
   matrix<lower=0, upper=1>[S, J] p;  // detection probabilities
-  column_stochastic_matrix[S, J] eta;  // initial state probabilities
+  simplex[S] eta;  // initial state probabilities
   vector<lower=0, upper=1>[Sm1] delta;  // event probabilities
 }
 
 transformed parameters {
+  // priors
   real lprior = gamma_lpdf(h | 1, 3) + gamma_lpdf(q | 1, 3)
                 + beta_lpdf(to_vector(p) | 1, 1);
 }
 
 model {
+  target += lprior;
+  
+  // log TPMs, detection logits, event and initial state log probabilities
   matrix[Sp1, Sp1] Q = rate_matrix(h, q);
-  matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
-  matrix[S, J] log_eta = log(eta);
-  array[Jm1] matrix[Sp1, Sp1] log_H;
-  for (j in 1:Jm1) {
-    log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
-    log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
-  }
-  array[J] matrix[S, K_max] logit_p;
-  for (j in 1:J) {
-    logit_p[j, :, :K[j]] = rep_matrix(logit(p[:, j]), K[j]);
-  }
-  target += cjs_me_rd(y, f_l, K, g, log_H, logit_p, log_E, log_eta);
-  /* Code change for individual effects
   array[Jm1] matrix[Sp1, Sp1] log_H_j;
   for (j in 1:Jm1) {
     log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
     log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
   }
-  array[I, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I);
-  array[I, J] matrix[S, K_max] logit_p;
+  array[J] matrix[S, K_max] logit_p_j;
   for (j in 1:J) {
-    vector[S] logit_p_j = logit(p[:, j]);
-    for (i in 1:I) {
-      logit_p[i, j, :, :K[j]] = rep_matrix(logit_p_j, K[j]);
-    }
+    logit_p_j[j, :, :K[j]] = rep_matrix(logit(p[:, j]), K[j]);
   }
-  target += grainsize ?
-            reduce_sum(partial_cjs_me_rd, seq, grainsize, y, f_l, K, g, log_H,
-                       logit_p, log_E, log_eta)
-            : sum(cjs_me_rd(y, f_l, K, g, log_H, logit_p, log_E, log_eta)); // */
-  target += lprior;
+  array[J, K_max] matrix[S, S] log_E_j =
+    rep_array(log(triangular_bidiagonal_stochastic_matrix(delta)), J, K_max);
+  matrix[S, J] log_eta_j = rep_matrix(log(eta), J);
+            
+  // likelihood with individual or survey-level parameters
+  if (ind) {
+    array[I, Jm1] matrix[Sp1, Sp1] log_H_i = rep_array(log_H_j, I);
+    array[I, J] matrix[S, K_max] logit_p_i = rep_array(logit_p_j, I);
+    array[I, J, K_max] matrix[S, S] log_E_i = rep_array(log_E_j, I);
+    array[I] matrix[S, J] log_eta_i = rep_array(log_eta_j, I);
+    target += grainsize ?
+              reduce_sum(partial_cjs_me_rd, seq, grainsize, y, f_l, K, g,
+                         log_H_i, logit_p_i, log_E_i, log_eta_i)
+              : sum(cjs_me_rd(y, f_l, K, g, log_H_i, logit_p_i, log_E_i, 
+                    log_eta_i));
+  } else {
+    target += cjs_me_rd(y, f_l, K, g, log_H_j, logit_p_j, log_E_j, log_eta_j);
+  }
 }
 
 generated quantities {
   vector[I] log_lik;
   {
     matrix[Sp1, Sp1] Q = rate_matrix(h, q);
-    matrix[S, S] log_E = log(triangular_bidiagonal_stochastic_matrix(delta));
-    matrix[S, J] log_eta = log(eta);
-    array[Jm1] matrix[Sp1, Sp1] log_H;
-    for (j in 1:Jm1) {
-      log_H[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
-      log_H[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
-    }
-    array[J] matrix[S, K_max] logit_p;
-    for (j in 1:J) {
-      logit_p[j, :, :K[j]] = rep_matrix(logit(p[:, j]), K[j]);
-    }
-    /* Code change for individual effects
     array[Jm1] matrix[Sp1, Sp1] log_H_j;
     for (j in 1:Jm1) {
       log_H_j[j, :S] = log(matrix_exp(Q * tau_scl[j])[:S]);
       log_H_j[j, Sp1] = append_col(rep_row_vector(negative_infinity(), S), 0);
     }
-    array[I, Jm1] matrix[Sp1, Sp1] log_H = rep_array(log_H_j, I);
-    array[I, J] matrix[S, K_max] logit_p;
+    array[J] matrix[S, K_max] logit_p_j;
     for (j in 1:J) {
-      vector[S] logit_p_j = logit(p[:, j]);
-      for (i in 1:I) {
-        logit_p[i, j, :, :K[j]] = rep_matrix(logit_p_j, K[j]);
-      }
-    } // */
-    log_lik = cjs_me_rd(y, f_l, K, g, log_H, logit_p, log_E, log_eta);
+      logit_p_j[j, :, :K[j]] = rep_matrix(logit(p[:, j]), K[j]);
+    }
+    array[J, K_max] matrix[S, S] log_E_j =
+      rep_array(log(triangular_bidiagonal_stochastic_matrix(delta)), J, K_max);
+    matrix[S, J] log_eta_j = rep_matrix(log(eta), J);
+    if (ind) {
+      array[I, Jm1] matrix[Sp1, Sp1] log_H_i = rep_array(log_H_j, I);
+      array[I, J] matrix[S, K_max] logit_p_i = rep_array(logit_p_j, I);
+      array[I, J, K_max] matrix[S, S] log_E_i = rep_array(log_E_j, I);
+      array[I] matrix[S, J] log_eta_i = rep_array(log_eta_j, I);
+      log_lik = cjs_me_rd(y, f_l, K, g, log_H_i, logit_p_i, log_E_i, log_eta_i);
+    } else {
+      log_lik = cjs_me_rd(y, f_l, K, g, log_H_j, logit_p_j, log_E_j, log_eta_j);
+    }
   }
 }

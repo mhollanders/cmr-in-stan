@@ -39,7 +39,7 @@ source(here("sbc/simulate-cmr.R"))
 theme_set(my_theme(base_size = 6))
 N_super <- 200 ; J <- 6 ; K <- 2 ; S <- 2 ; n_sims <- 500
 chains <- 8 ; iter_warmup <- 200 ; iter_sampling <- 500
-options(digits = 3, mc.cores = 8)
+options(digits = 3, mc.cores = chains)
 ```
 
 \newpage

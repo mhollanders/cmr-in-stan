@@ -1,0 +1,764 @@
+@article{abril2023pymc,
+  title = {{{PyMC}}: A Modern, and Comprehensive Probabilistic Programming Framework in {{Python}}},
+  author = {{Abril-Pla}, Oriol and Andreani, Virgile and Carroll, Colin and Dong, Larry and Fonnesbeck, Christopher J and Kochurov, Maxim and Kumar, Ravin and Lao, Junpeng and Luhmann, Christian C and Martin, Osvaldo A and others},
+  year = 2023,
+  journal = {PeerJ Computer Science},
+  volume = {9},
+  pages = {e1516},
+  publisher = {PeerJ Inc.}
+}
+
+@misc{aguilar2025,
+  title = {Generalized {{Decomposition Priors}} on {{R2}}},
+  author = {Aguilar, Javier Enrique and B{\"u}rkner, Paul-Christian},
+  year = 2025,
+  month = feb,
+  number = {arXiv:2401.10180},
+  eprint = {2401.10180},
+  primaryclass = {stat},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.2401.10180},
+  urldate = {2025-07-17},
+  abstract = {The adoption of continuous shrinkage priors in high-dimensional linear models has gained widespread attention due to their practical and theoretical advantages. Among them, the R2D2 prior has gained popularity for its intuitive specification of the proportion of explained variance (R2) and its theoretically grounded properties. The R2D2 prior allocates variance among regression terms through a Dirichlet decomposition. However, this approach inherently limits the dependency structure among variance components to the negative dependence modeled by the Dirichlet distribution, which is fully determined by the mean. This limitation hinders the prior's ability to capture more nuanced or positive dependency patterns that may arise in real-world data. To address this, we propose the Generalized Decomposition R2 (GDR2) prior, which replaces the Dirichlet decomposition with the more flexible Logistic-Normal distribution and its variants. By allowing richer dependency structures, the GDR2 prior accommodates more realistic and adaptable competition among variance components, enhancing the expressiveness and applicability of R2-based priors in practice. Through simulations and real-world benchmarks, we demonstrate that the GDR2 prior improves out-of-sample predictive performance and parameter recovery compared to the R2D2 prior. Our framework bridges the gap between flexibility in variance decomposition and practical implementation, advancing the utility of shrinkage priors in complex regression settings.},
+  archiveprefix = {arXiv},
+  keywords = {Statistics - Methodology},
+  file = {/Users/s447341/Zotero/storage/GSKQ4A64/Aguilar and Bürkner - 2025 - Generalized Decomposition Priors on R2.pdf}
+}
+
+@article{aitchison1980,
+  title = {Logistic-{{Normal Distributions}}: {{Some Properties}} and {{Uses}}},
+  author = {Aitchison, J and Shen, S M},
+  year = 1980,
+  journal = {Biometrika},
+  volume = {67},
+  number = {2},
+  pages = {261--272},
+  doi = {10.1093/biomet/67.2.261},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/3AC5I94I/Aitchison and Shen - Logistic-Normal Distributions Some Properties and Uses.pdf}
+}
+
+@article{barker2018,
+  title = {On the Reliability of {{N-mixture}} Models for Count Data},
+  author = {Barker, Richard J. and Schofield, Matthew R. and Link, William A. and Sauer, John R.},
+  year = 2018,
+  journal = {Biometrics},
+  volume = {74},
+  number = {1},
+  pages = {369--377},
+  issn = {1541-0420},
+  doi = {10.1111/biom.12734},
+  urldate = {2025-07-25},
+  abstract = {N-mixture models describe count data replicated in time and across sites in terms of abundance N and detectability p. They are popular because they allow inference about N while controlling for factors that influence p without the need for marking animals. Using a capture--recapture perspective, we show that the loss of information that results from not marking animals is critical, making reliable statistical modeling of N and p problematic using just count data. One cannot reliably fit a model in which the detection probabilities are distinct among repeat visits as this model is overspecified. This makes uncontrolled variation in p problematic. By counter example, we show that even if p is constant after adjusting for covariate effects (the ``constant p'' assumption) scientifically plausible alternative models in which N (or its expectation) is non-identifiable or does not even exist as a parameter, lead to data that are practically indistinguishable from data generated under an N-mixture model. This is particularly the case for sparse data as is commonly seen in applications. We conclude that under the constant p assumption reliable inference is only possible for relative abundance in the absence of questionable and/or untestable assumptions or with better quality data than seen in typical applications. Relative abundance models for counts can be readily fitted using Poisson regression in standard software such as R and are sufficiently flexible to allow controlling for p through the use covariates while simultaneously modeling variation in relative abundance. If users require estimates of absolute abundance, they should collect auxiliary data that help with estimation of p.},
+  copyright = {\copyright{} 2017, The International Biometric Society},
+  langid = {english},
+  keywords = {Ancillary statistic,Capture recapture,Log linear model,N-mixture models,Partial likelihood},
+  file = {/Users/s447341/Zotero/storage/6CQWRMF4/Barker et al. - 2018 - On the reliability of N-mixture models for count data.pdf}
+}
+
+@misc{betancourt2018,
+  title = {A {{Conceptual Introduction}} to {{Hamiltonian Monte Carlo}}},
+  author = {Betancourt, Michael},
+  year = 2018,
+  month = jul,
+  number = {arXiv:1701.02434},
+  eprint = {1701.02434},
+  primaryclass = {stat},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.1701.02434},
+  urldate = {2025-08-10},
+  abstract = {Hamiltonian Monte Carlo has proven a remarkable empirical success, but only recently have we begun to develop a rigorous understanding of why it performs so well on difficult problems and how it is best applied in practice. Unfortunately, that understanding is confined within the mathematics of differential geometry which has limited its dissemination, especially to the applied communities for which it is particularly important. In this review I provide a comprehensive conceptual account of these theoretical foundations, focusing on developing a principled intuition behind the method and its optimal implementations rather of any exhaustive rigor. Whether a practitioner or a statistician, the dedicated reader will acquire a solid grasp of how Hamiltonian Monte Carlo works, when it succeeds, and, perhaps most importantly, when it fails.},
+  archiveprefix = {arXiv},
+  keywords = {Statistics - Methodology},
+  file = {/Users/s447341/Zotero/storage/LFAY9RZR/Betancourt - 2018 - A Conceptual Introduction to Hamiltonian Monte Carlo.pdf}
+}
+
+@article{burkner2021,
+  title = {Efficient Leave-One-out Cross-Validation for {{Bayesian}} Non-Factorized Normal and {{Student-t}} Models},
+  author = {B{\"u}rkner, Paul-Christian and Gabry, Jonah and Vehtari, Aki},
+  year = 2021,
+  month = jun,
+  journal = {Computational Statistics},
+  volume = {36},
+  number = {2},
+  pages = {1243--1261},
+  issn = {0943-4062, 1613-9658},
+  doi = {10.1007/s00180-020-01045-4},
+  urldate = {2025-11-21},
+  abstract = {Cross-validation can be used to measure a model's predictive accuracy for the purpose of model comparison, averaging, or selection. Standard leave-one-out cross-validation (LOO-CV) requires that the observation model can be factorized into simple terms, but a lot of important models in temporal and spatial statistics do not have this property or are inefficient or unstable when forced into a factorized form. We derive how to efficiently compute and validate both exact and approximate LOO-CV for any Bayesian non-factorized model with a multivariate normal or Student-t distribution on the outcome values. We demonstrate the method using lagged simultaneously autoregressive (SAR) models as a case study.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/IXSUGEAU/Bürkner et al. - 2021 - Efficient leave-one-out cross-validation for Bayesian non-factorized normal and Student-t models.pdf}
+}
+
+@article{carpenter2017,
+  title = {Stan: {{A Probabilistic Programming Language}}},
+  shorttitle = {Stan},
+  author = {Carpenter, Bob and Gelman, Andrew and Hoffman, Matthew D. and Lee, Daniel and Goodrich, Ben and Betancourt, Michael and Brubaker, Marcus A. and Guo, Jiqiang and Li, Peter and Riddell, Allen},
+  year = 2017,
+  journal = {Journal of Statistical Software},
+  volume = {76},
+  pages = {1},
+  issn = {1548-7660},
+  doi = {10.18637/jss.v076.i01},
+  urldate = {2024-10-10},
+  abstract = {Stan is a probabilistic programming language for specifying statistical models. A Stan program imperatively defines a log probability function over parameters conditioned on specified data and constants. As of version 2.14.0, Stan provides full Bayesian inference for continuous-variable models through Markov chain Monte Carlo methods such as the No-U-Turn sampler, an adaptive form of Hamiltonian Monte Carlo sampling. Penalized maximum likelihood estimates are calculated using optimization methods such as the limited memory Broyden-Fletcher-Goldfarb-Shanno algorithm., Stan is also a platform for computing log densities and their gradients and Hessians, which can be used in alternative algorithms such as variational Bayes, expectation propagation, and marginal inference using approximate integration. To this end, Stan is set up so that the densities, gradients, and Hessians, along with intermediate quantities of the algorithm such as acceptance probabilities, are easily accessible., Stan can be called from the command line using the cmdstan package, through R using the rstan package, and through Python using the pystan package. All three interfaces support sampling and optimization-based inference with diagnostics and posterior analysis. rstan and pystan also provide access to log probabilities, gradients, Hessians, parameter transforms, and specialized plotting.},
+  pmcid = {PMC9788645},
+  pmid = {36568334},
+  file = {/Users/s447341/Zotero/storage/BERXNNZ7/Carpenter et al. - 2017 - Stan A Probabilistic Programming Language.pdf}
+}
+
+@article{cormack1964,
+  title = {Estimates of Survival from the Sighting of Marked Animals},
+  author = {Cormack, R. M.},
+  year = 1964,
+  journal = {Biometrika},
+  volume = {51},
+  number = {3/4},
+  eprint = {2334149},
+  eprinttype = {jstor},
+  pages = {429--438},
+  publisher = {[Oxford University Press, Biometrika Trust]},
+  issn = {0006-3444},
+  doi = {10.2307/2334149},
+  urldate = {2025-04-09},
+  file = {/Users/s447341/Zotero/storage/3R4VS2Q4/Cormack - 1964 - Estimates of Survival from the Sighting of Marked Animals.pdf}
+}
+
+@article{devalpine2017,
+  title = {Programming with Models: Writing Statistical Algorithms for General Model Structures with {{NIMBLE}}},
+  author = {{de Valpine}, Perry and Turek, Daniel and Paciorek, Christopher and {Anderson-Bergman}, Cliff and Temple Lang, Duncan and Bodik, Ras},
+  year = 2017,
+  journal = {Journal of Computational and Graphical Statistics},
+  volume = {26},
+  number = {2},
+  pages = {403--413},
+  doi = {10.1080/10618600.2016.1172487}
+}
+
+@article{dorazio2020,
+  title = {Objective Prior Distributions for {{Jolly}}-{{Seber}} Models of Zero-augmented Data},
+  author = {Dorazio, Robert M.},
+  year = 2020,
+  month = dec,
+  journal = {Biometrics},
+  volume = {76},
+  number = {4},
+  pages = {1285--1296},
+  issn = {0006-341X, 1541-0420},
+  doi = {10.1111/biom.13221},
+  urldate = {2025-02-17},
+  abstract = {Statistical models of capture-recapture data that are used to estimate the dynamics of a population are known collectively as Jolly-Seber (JS) models. State-space versions of these models have been developed for the analysis of zero-augmented data that include the capture histories of the observed individuals and an arbitrarily large number of all-zero capture histories. The number of all-zero capture histories must be sufficiently large to include the unknown number {$N$} of individuals in the population that were ever alive during all sampling periods. This definition of {$N$} is equivalent to the ``superpopulation'' of individuals described in several JS models. To fit JS models of zero-augmented data, practitioners often assume a set of independent, uniform prior distributions for the recruitment parameters. However, if the number of capture histories is small compared to {$N$}, these uniform priors can exert considerable influence on the posterior distributions of {$N$} and other parameters because the uniform priors induce a highly skewed prior on {$N$}. In this article, I derive a class of prior distributions for the recruitment parameters of the JS model that can be used to specify objective prior distributions for {$N$}, including the discrete-uniform and the improper scale priors as special cases. This class of priors also may be used to specify prior knowledge about recruitment while still preserving the conditions needed to induce an objective prior on {$N$}. I use analyses of simulated and real data to illustrate the inferential benefits of this class of prior distributions and to identify circumstances where these benefits are most likely to be realized.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/REYBKBX9/Dorazio - 2020 - Objective prior distributions for Jolly‐Seber models of zero‐augmented data.pdf}
+}
+
+@article{duarte2011,
+  title = {Estimating Abundance of the Endangered {{Houston}} Toad on a Primary Recovery Site},
+  author = {Duarte, Adam and Brown, Donald J. and Forstner, Michael R.J.},
+  year = 2011,
+  month = dec,
+  journal = {Journal of Fish and Wildlife Management},
+  volume = {2},
+  number = {2},
+  pages = {207--215},
+  issn = {1944-687X},
+  doi = {10.3996/072011-JFWM-041},
+  urldate = {2025-08-11},
+  abstract = {The Griffith League Ranch is one of the primary recovery sites for the endangered Houston toad Bufo (Anaxyrus) houstonensis. New recovery initiatives have recently been implemented to increase Houston toad abundance; however, no robust estimate of population size has been conducted in the last decade of study, nor from this recovery site. To assist with inferences regarding efficacy of current and future management actions, we estimated adult Houston toad abundance on the Griffith League Ranch. Houston toads were sampled at breeding ponds during the 2010 breeding season using a mark--recapture methodology. We analyzed the data using a modified Jolly--Seber open population model in Program MARK. Models were built whereby the probability of capture remained constant, the apparent survival varied with time or was constant, and the probability of entry varied with time. Model averaging was used to account for uncertainty and the derived adult male Houston toad abundance ranged from 201 to 307 individuals. Using a previously determined Griffith League Ranch Houston toad functional sex ratio of 5:1, we estimated the abundance of the total adult Houston toad population on this primary recovery site to be from 241 to 368 individuals. This study is the first to report a robust abundance estimate of a Houston toad population and provides a foundation for further research to quantify the impact of current and future management actions.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/HLDLBR7J/Duarte et al. - 2011 - Estimating Abundance of the Endangered Houston Toad on a Primary Recovery Site.pdf}
+}
+
+@article{dupuis2007,
+  title = {A {{Bayesian}} Approach to the Multistate {{Jolly-Seber}} Capture-Recapture Model},
+  author = {Dupuis, Jerome A. and Schwarz, Carl James},
+  year = 2007,
+  journal = {Biometrics},
+  volume = {63},
+  number = {4},
+  eprint = {4541454},
+  eprinttype = {jstor},
+  pages = {1015--1022},
+  publisher = {[Wiley, International Biometric Society]},
+  issn = {0006-341X},
+  urldate = {2025-04-09},
+  abstract = {This article considers a Bayesian approach to the multistate extension of the Jolly-Seber model commonly used to estimate population abundance in capture-recapture studies. It extends the work of George and Robert (1992, Biometrika 79, 677-683), which dealt with the Bayesian estimation of a closed population with only a single state for all animals. A super-population is introduced to model new entrants in the population. Bayesian estimates of abundance are obtained by implementing a Gibbs sampling algorithm based on data augmentation of the missing data in the capture histories when the state of the animal is unknown. Moreover, a partitioning of the missing data is adopted to ensure the convergence of the Gibbs sampling algorithm even in the presence of impossible transitions between some states. Lastly, we apply our methodology to a population of fish to estimate abundance and movement. /// Nous proposons une approche bay\'esienne de l'extension multi\'etats du mod\`ele de Jolly-Seber d'estimation d'effectif de population par capture-recapture. Ce travail constitue un prolongement de celui de George et Robert (1992, Biometrika 79: 677-683), qui concernait l'estimation bay\'esienne d'une population ferm\'ee avec un seul \'etat. Nous mod\'elisons l'arriv\'ee de nouveaux entrants dans la population en consid\'erant une "super-population". Les estimateurs bay\'esiens de l'abondance sont obtenus par un algorithme l'\'echantillonnage de Gibbs bas\'e sur l'augmentation des donn\'ees par simulation des donn\'ees manquantes dans les histoires de capture quand le stade de l'animal est inconnu. De plus, nous \'etablissons une partition des donn\'ees manquantes qui permet d'assurer la convergence de l'\'echantillonneur de Gibbs, m\^eme si les transitions entre certains \'etats sont impossibles. Finalement, nous appliquons la m\'ethode propos\'ee \`a une population de poissons, dont nous estimons l'abondance et les mouvements.},
+  file = {/Users/s447341/Zotero/storage/KHBVM5KR/Dupuis and Schwarz - 2007 - A Bayesian Approach to the Multistate Jolly-Seber Capture-Recapture Model.pdf}
+}
+
+@article{ergon2018,
+  title = {The Utility of Mortality Hazard Rates in Population Analyses},
+  author = {Ergon, Torbj{\o}rn and Borgan, {\O}rnulf and Nater, Chlo{\'e} Rebecca and Vindenes, Yngvild},
+  year = 2018,
+  journal = {Methods in Ecology and Evolution},
+  volume = {9},
+  number = {10},
+  pages = {2046--2056},
+  issn = {2041-210X},
+  doi = {10.1111/2041-210X.13059},
+  urldate = {2025-02-02},
+  abstract = {Mortality is a key process in ecology and evolution, and much effort is spent on development and application of statistical and theoretical models involving mortality. Mortality takes place in continuous time, and a fundamental representation of mortality risks is the mortality hazard rate, which is the intensity of deadly events that an individual is exposed to at any point in time. In discrete-time population models, however, the mortality process is represented by survival or mortality probabilities, which are aggregate functions of the mortality hazard rates within given intervals. In this commentary, we argue that focussing on mortality hazard rates, also when using discrete-time models, aids the construction of biologically reasonable models and improves ecological inference. We discuss three topics in population ecology where mortality hazard rates can be particularly useful for biological inference, but are nevertheless often not used: (a) modelling of covariate effects, (b) modelling of multiple sources of mortality and competing risks, and (c) elasticity analyses of population growth rate with respect to demographic parameters. To facilitate estimation of cause-specific mortality hazard rates, we provide extensions to the R package marked. Using mortality hazard rates sometimes makes it easier to formulate biologically reasonable models with more directly interpretable parameterizations and more explicit assumptions. In particular, interpretations about relative differences between mortality hazard rates, or effects of relative changes in mortality hazard rates on population growth (elasticities), are often more meaningful than interpretations involving relative differences in survival (or mortality) probabilities or odds. The concept of hazard rates is essential for understanding ecological and evolutionary processes and we give an intuitive explanation for this, using several examples. We provide some practical guidelines and suggestions for further methods developments.},
+  langid = {english},
+  keywords = {capture-mark-recapture,cause-specific mortality,competing risks,loglog-link function,measurement theory,odds ratio versus hazard ratio,sensitivity/elasticity analysis,time-averaged hazard rates},
+  file = {/Users/s447341/Zotero/storage/DIH437GJ/Ergon et al. - 2018 - The utility of mortality hazard rates in population analyses.pdf}
+}
+
+@manual{gabry2025,
+  type = {Manual},
+  title = {{{cmdstanr}}: {{R Interface}} to '{{CmdStan}}'},
+  author = {Gabry, Jonah and {\v C}e{\v s}novar, Rok and Johnson, Andrew and Bronder, Steve},
+  year = 2025
+}
+
+@article{gilbert2021,
+  title = {Abundance Estimation of Unmarked Animals Based on Camera-Trap Data},
+  author = {Gilbert, Neil A. and Clare, John D. J. and Stenglein, Jennifer L. and Zuckerberg, Benjamin},
+  year = 2021,
+  journal = {Conservation Biology},
+  volume = {35},
+  number = {1},
+  pages = {88--100},
+  issn = {1523-1739},
+  doi = {10.1111/cobi.13517},
+  urldate = {2025-07-22},
+  abstract = {The rapid improvement of camera traps in recent decades has revolutionized biodiversity monitoring. Despite clear applications in conservation science, camera traps have seldom been used to model the abundance of unmarked animal populations. We sought to summarize the challenges facing abundance estimation of unmarked animals, compile an overview of existing analytical frameworks, and provide guidance for practitioners seeking a suitable method. When a camera records multiple detections of an unmarked animal, one cannot determine whether the images represent multiple mobile individuals or a single individual repeatedly entering the camera viewshed. Furthermore, animal movement obfuscates a clear definition of the sampling area and, as a result, the area to which an abundance estimate corresponds. Recognizing these challenges, we identified 6 analytical approaches and reviewed 927 camera-trap studies published from 2014 to 2019 to assess the use and prevalence of each method. Only about 5\% of the studies used any of the abundance-estimation methods we identified. Most of these studies estimated local abundance or covariate relationships rather than predicting abundance or density over broader areas. Next, for each analytical approach, we compiled the data requirements, assumptions, advantages, and disadvantages to help practitioners navigate the landscape of abundance estimation methods. When seeking an appropriate method, practitioners should evaluate the life history of the focal taxa, carefully define the area of the sampling frame, and consider what types of data collection are possible. The challenge of estimating abundance of unmarked animal populations persists; although multiple methods exist, no one method is optimal for camera-trap data under all circumstances. As analytical frameworks continue to evolve and abundance estimation of unmarked animals becomes increasingly common, camera traps will become even more important for informing conservation decision-making.},
+  langid = {english},
+  keywords = {,biodiversity monitoring,densidad de poblacion,hierarchical modeling,metodos no invasivos,modelado jerarquico,modelado poblacional,modelos de distribucion de especies,monitoreo de la biodiversidad,noninvasive methods,population density,population modeling,prediccion,prediction,species distribution models},
+  file = {/Users/s447341/Zotero/storage/Z3E8VYCT/Gilbert et al. - 2021 - Abundance estimation of unmarked animals based on camera-trap data.pdf}
+}
+
+@article{glennie2023,
+  title = {Hidden {{Markov}} Models: {{Pitfalls}} and Opportunities in Ecology},
+  shorttitle = {Hidden {{Markov}} Models},
+  author = {Glennie, Richard and Adam, Timo and {Leos-Barajas}, Vianey and Michelot, Th{\'e}o and Photopoulou, Theoni and McClintock, Brett T.},
+  year = 2023,
+  journal = {Methods in Ecology and Evolution},
+  volume = {14},
+  number = {1},
+  pages = {43--56},
+  issn = {2041-210X},
+  doi = {10.1111/2041-210X.13801},
+  urldate = {2024-10-10},
+  abstract = {Hidden Markov models (HMMs) and their extensions are attractive methods for analysing ecological data where noisy, multivariate measurements are made of a hidden, ecological process, and where this hidden process is represented by a sequence of discrete states. Yet, as these models become more complex and challenging to understand, it is important to consider what pitfalls these methods have and what opportunities there are for future research to address these pitfalls. In this paper, we review five lesser known pitfalls one can encounter when using HMMs or their extensions to solve ecological problems: (a) violation of the snapshot property in continuous-time HMMs; (b) biased inference from hierarchical HMMs when applied to temporally misaligned processes; (c) sensitive inference from using random effects to partially pool across heterogeneous individuals; (d) computational burden when using HMMs to approximate models with continuous state spaces; and (e) difficulty linking the hidden process to space or environment. This review is for ecologists and ecological statisticians familiar with HMMs, but who may be less aware of the problems that arise in more specialised applications. We demonstrate how each pitfall arises, by simulation or example, and discuss why this pitfall is important to consider. Along with identifying the problems, we highlight potential research opportunities and offer ideas that may help alleviate these pitfalls. Each of the methods we review are solutions to current ecological research problems. We intend for this paper to heighten awareness of the pitfalls ecologists may encounter when applying these more advanced methods, but we also hope that by highlighting future research opportunities, we can inspire ecological statisticians to weaken these pitfalls and provide improved methods.},
+  langid = {english},
+  keywords = {animal movement,continuous time,hidden Markov model,hierarchical model,population ecology,random effects,state space models,time series},
+  file = {/Users/s447341/Zotero/storage/7Y8Z9UX6/Glennie et al. - 2023 - Hidden Markov models Pitfalls and opportunities in ecology.pdf}
+}
+
+@article{hoffman2014,
+  title = {The {{No-U-Turn Sampler}}: {{Adaptively Setting Path Lengths}} in {{Hamiltonian Monte Carlo}}},
+  author = {Hoffman, Matthew D and Gelman, Andrew},
+  year = 2014,
+  journal = {Journal of Machine Learning Research},
+  volume = {15},
+  pages = {1593--1623},
+  abstract = {Hamiltonian Monte Carlo (HMC) is a Markov chain Monte Carlo (MCMC) algorithm that avoids the random walk behavior and sensitivity to correlated parameters that plague many MCMC methods by taking a series of steps informed by first-order gradient information. These features allow it to converge to high-dimensional target distributions much more quickly than simpler methods such as random walk Metropolis or Gibbs sampling. However, HMC's performance is highly sensitive to two user-specified parameters: a step size and a desired number of steps L. In particular, if L is too small then the algorithm exhibits undesirable random walk behavior, while if L is too large the algorithm wastes computation. We introduce the No-U-Turn Sampler (NUTS), an extension to HMC that eliminates the need to set a number of steps L. NUTS uses a recursive algorithm to build a set of likely candidate points that spans a wide swath of the target distribution, stopping automatically when it starts to double back and retrace its steps. Empirically, NUTS performs at least as efficiently as (and sometimes more efficiently than) a well tuned standard HMC method, without requiring user intervention or costly tuning runs. We also derive a method for adapting the step size parameter on the fly based on primal-dual averaging. NUTS can thus be used with no hand-tuning at all, making it suitable for applications such as BUGS-style automatic inference engines that require efficient ``turnkey'' samplers.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/NW47KR69/Hoﬀman and Gelman - The No-U-Turn Sampler Adaptively Setting Path Lengths in Hamiltonian Monte Carlo.pdf}
+}
+
+@article{hollanders2022,
+  title = {Know What You Don't Know: {{Embracing}} State Uncertainty in Disease-Structured Multistate Models},
+  shorttitle = {Know What You Don't Know},
+  author = {Hollanders, Matthijs and Royle, J. Andrew},
+  year = 2022,
+  journal = {Methods in Ecology and Evolution},
+  volume = {13},
+  number = {12},
+  pages = {2827--2837},
+  issn = {2041-210X},
+  doi = {10.1111/2041-210X.13993},
+  urldate = {2025-08-10},
+  abstract = {Hidden Markov models (HMMs) are broadly applicable hierarchical models that derive their utility from separating state processes from observation processes yielding the data. Multistate models such as mark--recapture and dynamic multistate occupancy models are HMMs frequently used in ecology. In their early formulations, states, such as pathogen infection status, were assumed to be perfectly observed without ambiguity. However, state uncertainty is a pervasive feature of many ecological studies, and multievent models were developed to explicitly account for it. We developed a novel extended multievent mark--recapture model that incorporates state uncertainty at multiple levels of detection. Using a disease-structured example, both false negative and false positive state assignment errors are modelled at two levels of state assignment---the pathogen sampling process and the diagnostic process that samples are subjected to. We additionally describe methods to jointly model infection intensity to integrate heterogeneity in ecological parameters, such as mortality and infection dynamics, and the pathogen detection processes. We provide code to simulate and analyse datasets with various underlying ecological processes and fit our model to a mark--recapture dataset of Mixophyes fleayi (Fleay's barred frog) infected with the amphibian chytrid fungus (Batrachochytrium dendrobatidis, Bd). In our case study, we found evidence for various state assignment errors: the sampling protocol performed poorly in detecting Bd, pathogen detection was highly dependent on infection intensity and false positives were non-negligible. Incorporating state uncertainty yielded significantly higher estimates of infection prevalence and 4--5 times lower rates of infection state transitions compared to those obtained from a traditional multistate model. Our results highlight that incorporating state assignment errors improves inference on the ecological process, especially when sensitivity and specificity of the state assignment processes are low. The general model structure can be applied to other HMMs, providing a foundation for modelling state uncertainty in related models. For disease-structured multistate models, we recommend conducting robust design surveys and collecting samples during each capture event to facilitate incorporating pathogen detection errors.},
+  copyright = {\copyright{} 2022 The Authors. Methods in Ecology and Evolution published by John Wiley \& Sons Ltd on behalf of British Ecological Society.},
+  langid = {english},
+  keywords = {Batrachochytrium dendrobatidis,Bayesian,hidden Markov model,hierarchical model,mark-recapture,multievent,state uncertainty},
+  file = {/Users/s447341/Zotero/storage/NWZUEGRV/Hollanders and Royle - 2022 - Know what you don't know Embracing state uncertainty in disease-structured multistate models.pdf}
+}
+
+@article{hollanders2023a,
+  title = {Recovered Frog Populations Coexist with Endemic {{{\emph{Batrachochytrium}}}}{\emph{ Dendrobatidis}} despite Load-Dependent Mortality},
+  author = {Hollanders, Matthijs and Grogan, Laura F. and Nock, Catherine J. and McCallum, Hamish I. and Newell, David A.},
+  year = 2023,
+  journal = {Ecological Applications},
+  volume = {33},
+  number = {1},
+  pages = {e2724},
+  issn = {1939-5582},
+  doi = {10.1002/eap.2724},
+  urldate = {2025-08-12},
+  abstract = {Novel infectious diseases, particularly those caused by fungal pathogens, pose considerable risks to global biodiversity. The amphibian chytrid fungus (Batrachochytrium dendrobatidis, Bd) has demonstrated the scale of the threat, having caused the greatest recorded loss of vertebrate biodiversity attributable to a pathogen. Despite catastrophic declines on several continents, many affected species have experienced population recoveries after epidemics. However, the potential ongoing threat of endemic Bd in these recovered or recovering populations is still poorly understood. We investigated the threat of endemic Bd to frog populations that recovered after initial precipitous declines, focusing on the endangered rainforest frog Mixophyes fleayi. We conducted extensive field surveys over 4 years at three independent sites in eastern Australia. First, we compared Bd infection prevalence and infection intensities within frog communities to reveal species-specific infection patterns. Then, we analyzed mark-recapture data of M. fleayi to estimate the impact of Bd infection intensity on apparent mortality rates and Bd infection dynamics. We found that M. fleayi had lower infection intensities than sympatric frogs across the three sites, and cleared infections at higher rates than they gained infections throughout the study period. By incorporating time-varying individual infection intensities, we show that healthy M. fleayi populations persist despite increased apparent mortality associated with infrequent high Bd loads. Infection dynamics were influenced by environmental conditions, with Bd prevalence, infection intensity, and rates of gaining infection associated with lower temperatures and increased rainfall. However, mortality remained constant year-round despite these fluctuations in Bd infections, suggesting major mortality events did not occur over the study period. Together, our results demonstrate that while Bd is still a potential threat to recovered populations of M. fleayi, high rates of clearing infections and generally low average infection loads likely minimize mortality caused by Bd. Our results are consistent with pathogen resistance contributing to the coexistence of M. fleayi with endemic Bd. We emphasize the importance of incorporating infection intensity into disease models rather than infection status alone. Similar population and infection dynamics likely exist within other recovered amphibian-Bd systems around the globe, promising longer-term persistence in the face of endemic chytridiomycosis.},
+  copyright = {\copyright{} 2022 The Authors. Ecological Applications published by Wiley Periodicals LLC on behalf of The Ecological Society of America.},
+  langid = {english},
+  keywords = {amphibian,Batrachochytrium dendrobatidis,chytridiomycosis,continuous-time,disease,hidden Markov model,infection intensity,mark-recapture},
+  file = {/Users/s447341/Zotero/storage/2CF92G3W/Hollanders et al. - 2023 - Recovered frog populations coexist with endemic Batrachochytrium dendrobatidis despite load-dependen.pdf}
+}
+
+@article{jolly1965,
+  title = {Explicit Estimates from Capture-Recapture Data with Both Death and Immigration-Stochastic Model},
+  author = {Jolly, G. M.},
+  year = 1965,
+  journal = {Biometrika},
+  volume = {52},
+  number = {1/2},
+  eprint = {2333826},
+  eprinttype = {jstor},
+  pages = {225--247},
+  publisher = {[Oxford University Press, Biometrika Trust]},
+  issn = {0006-3444},
+  doi = {10.2307/2333826},
+  urldate = {2025-04-09},
+  file = {/Users/s447341/Zotero/storage/73GHTJGB/Jolly - 1965 - Explicit Estimates from Capture-Recapture Data with Both Death and Immigration-Stochastic Model.pdf}
+}
+
+@article{kallioinen2023,
+  title = {Detecting and Diagnosing Prior and Likelihood Sensitivity with Power-Scaling},
+  author = {Kallioinen, Noa and Paananen, Topi and B{\"u}rkner, Paul-Christian and Vehtari, Aki},
+  year = 2023,
+  journal = {Statistics and Computing},
+  volume = {34},
+  number = {57},
+  doi = {10.1007/s11222-023-10366-5},
+  encoding = {UTF-8},
+  file = {/Users/s447341/Zotero/storage/J9UB32CB/Kallioinen et al. - 2023 - Detecting and diagnosing prior and likelihood sensitivity with power-scaling.pdf}
+}
+
+@article{kellner2021,
+  title = {{{ubms}}: {{An R}} Package for Fitting Hierarchical Occupancy and {{N-mixture}} Abundance Models in a {{Bayesian}} Framework},
+  author = {Kellner, Kenneth F. and Fowler, Nicholas L. and Petroelje, Tyler R. and Kautz, Todd M. and Beyer, Dean E. and Belant, Jerrold L.},
+  year = 2021,
+  journal = {Methods in Ecology and Evolution},
+  volume = {13},
+  pages = {577--584}
+}
+
+@article{lebreton1992,
+  title = {Modeling Survival and Testing Biological Hypotheses Using Marked Animals: A Unified Approach with Case Studies},
+  shorttitle = {Modeling Survival and Testing Biological Hypotheses Using Marked Animals},
+  author = {Lebreton, Jean-Dominique and Burnham, Kenneth P. and Clobert, Jean and Anderson, David R.},
+  year = 1992,
+  journal = {Ecological Monographs},
+  volume = {62},
+  number = {1},
+  pages = {67--118},
+  issn = {1557-7015},
+  doi = {10.2307/2937171},
+  urldate = {2025-11-24},
+  abstract = {The understanding of the dynamics of animal populations and of related ecological and evolutionary issues frequently depends on a direct analysis of life history parameters. For instance, examination of trade---offs between reproduction and survival usually rely on individually marked animals, for which the exact time of death is most often unknown, because marked individuals cannot be followed closely through time. Thus, the quantitative analysis of survival studies and experiments must be based on capture---recapture (or resighting) models which consider, besides the parameters of primary interest, recapture or resighting rates that are nuisance parameters. Capture---recapture models oriented to estimation of survival rates are the result of a recent change in emphasis from earlier approaches in which population size was the most important parameter, survival rates having been first introduced as nuisance parameters. This emphasis on survival rates in capture---recapture models developed rapidly in the 1980s and used as a basic structure the Cormack---Jolly---Seber survival model applied to an homogeneous group of animals, with various kinds of constraints on the model parameters. These approaches are conditional on first captures; hence they do not attempt to model the initial capture of unmarked animals as functions of population abundance in addition to survival and capture probabilities. This paper synthesizes, using a common framework, these recent developments together with new ones, with an emphasis on flexibility in modeling, model selection, and the analysis of multiple data sets. The effects on survival and capture rates of time, age, and categorical variables characterizing the individuals (e.g., sex) can be considered, as well as interactions between such effects. This 'analysis of variance' philosophy emphasizes the structure of the survival and capture process rather than the technical characteristics of any particular model. The flexible array of models encompassed in this synthesis uses a common notation. As a result of the great level of flexibility and relevance achieved, the focus is changed from fitting a particular model to model building and model selection. The following procedure is recommended: (1) start from a global model compatible with the biology of the species studied and with the design of the study, and assess its fit; (2) select a more parsimonious model using Akaike's Information Criterion to limit the number of formal tests; (3) test for the most important biological questions by comparing this model with neighboring ones using likelihood ratio tests; and (4) obtain maximum likelihood estimates of model parameters with estimates of precision. Computer software is critical, as few of the models now available have parameter estimators that are in closed form. A comprehensive table of existing computer software is provided. We used RELEASE for data summary and goodness---of---fit tests and SURGE for iterative model fitting and the computation of likelihood ratio tests. Five increasingly complex examples are given to illustrate the theory. The first, using two data sets on the European Dipper (Cinclus cinclus), tests for sex---specific parameters, explores a model with time---dependent survival rates, and finally uses a priori information to model survival allowing for an environmental variable. The second uses data on two colonies of the Swift (Apus apus), and shows how interaction terms can be modeled and assessed and how survival and recapture rates sometimes partly counterbalance each other. The third shows complex variation in survival rates across sexes and age classes in the roe deer (Capreolus capreolus), with a test of density dependence in annual survival rates. The fourth is an example of experimental density manipulation using the common lizard (Lacerta vivipara). The last example attempts to examine a large and complex data set on the Greater Flamingo (Phoenicopterus ruber), where parameters are age specific, survival is a function of an environmental variable, and an age \texttimes{} year interaction term is important. Heterogeneity seems present in this example and cannot be adequately modeled with existing theory. The discussion presents a summary of the paradigm we recommend and details issues in model selection and design, and foreseeable future developments.},
+  langid = {english}
+}
+
+@article{lunn2000,
+  title = {{{WinBUGS}} - {{A Bayesian}} Modelling Framework: {{Concepts}}, Structure, and Extensibility},
+  author = {Lunn, David J and Thomas, Andrew and Best, Nicky and Spiegelhalter, David},
+  year = 2000,
+  journal = {Statistics and Computing},
+  volume = {10},
+  pages = {325--337},
+  doi = {10.1023/A:1008929526011},
+  abstract = {WinBUGS is a fully extensible modular framework for constructing and analysing Bayesian full probability models. Models may be specified either textually via the BUGS language or pictorially using a graphical interface called DoodleBUGS. WinBUGS processes the model specification and constructs an object-oriented representation of the model. The software offers a user-interface, based on dialogue boxes and menu commands, through which the model may then be analysed using Markov chain Monte Carlo techniques. In this paper we discuss how and why various modern computing concepts, such as object-orientation and run-time linking, feature in the software's design. We also discuss how the framework may be extended. It is possible to write specific applications that form an apparently seamless interface with WinBUGS for users with specialized requirements. It is also possible to interface with WinBUGS at a lower level by incorporating new object types that may be used by WinBUGS without knowledge of the modules in which they are implemented. Neither of these types of extension require access to, or even recompilation of, the WinBUGS source-code.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/ZHM4KIVW/Lunn et al. - WinBUGS - A Bayesian modelling framework Concepts, structure, and extensibility.pdf}
+}
+
+@article{martin2024,
+  title = {Computing {{Bayes}}: From Then 'Til Now'},
+  shorttitle = {Computing Bayes},
+  author = {Martin, Gael M. and Frazier, David T. and Robert, Christian P.},
+  year = 2024,
+  month = feb,
+  journal = {Statistical Science},
+  volume = {39},
+  number = {1},
+  eprint = {2208.00646},
+  primaryclass = {stat},
+  issn = {0883-4237},
+  doi = {10.1214/22-STS876},
+  urldate = {2025-08-10},
+  abstract = {This paper takes the reader on a journey through the history of Bayesian computation, from the 18th century to the present day. Beginning with the one-dimensional integral first confronted by Bayes in 1763, we highlight the key contributions of: Laplace, Metropolis (and, importantly, his co-authors!), Hammersley and Handscomb, and Hastings, all of which set the foundations for the computational revolution in the late 20th century -- led, primarily, by Markov chain Monte Carlo (MCMC) algorithms. A very short outline of 21st century computational methods -- including pseudo-marginal MCMC, Hamiltonian Monte Carlo, sequential Monte Carlo, and the various `approximate' methods -- completes the paper.},
+  archiveprefix = {arXiv},
+  keywords = {Statistics - Computation},
+  file = {/Users/s447341/Zotero/storage/FCCJZKS7/Martin et al. - 2024 - Computing Bayes From Then 'Til Now'.pdf}
+}
+
+@article{mcclintock2020,
+  title = {Uncovering Ecological State Dynamics with Hidden {{Markov}} Models},
+  author = {McClintock, Brett T. and Langrock, Roland and Gimenez, Olivier and Cam, Emmanuelle and Borchers, David L. and Glennie, Richard and Patterson, Toby A.},
+  year = 2020,
+  month = dec,
+  journal = {Ecology Letters},
+  volume = {23},
+  number = {12},
+  pages = {1878--1903},
+  issn = {1461-023X},
+  doi = {10.1111/ele.13610},
+  urldate = {2025-09-11},
+  abstract = {Ecological systems can often be characterised by changes among a finite set of underlying states pertaining to individuals, populations, communities or entire ecosystems through time. Owing to the inherent difficulty of empirical field studies, ecological state dynamics operating at any level of this hierarchy can often be unobservable or `hidden'. Ecologists must therefore often contend with incomplete or indirect observations that are somehow related to these underlying processes. By formally disentangling state and observation processes based on simple yet powerful mathematical properties that can be used to describe many ecological phenomena, hidden Markov models (HMMs) can facilitate inferences about complex system state dynamics that might otherwise be intractable. However, HMMs have only recently begun to gain traction within the broader ecological community. We provide a gentle introduction to HMMs, establish some common terminology, review the immense scope of HMMs for applied ecological research and provide a tutorial on implementation and interpretation. By illustrating how practitioners can use a simple conceptual template to customise HMMs for their specific systems of interest, revealing methodological links between existing applications, and highlighting some practical considerations and limitations of these approaches, our goal is to help establish HMMs as a fundamental inferential tool for ecologists., By formally disentangling state and observation processes based on simple yet powerful mathematical properties that can be used to describe many ecological phenomena, hidden Markov models (HMMs) can facilitate inferences about complex system state dynamics that might otherwise be intractable. We provide a gentle introduction to HMMs, establish some common terminology, review the immense scope of HMMs for applied ecological research, and provide a tutorial on some of the more technical aspects of HMM implementation and interpretation. By illustrating how practitioners can use a simple conceptual template to customise HMMs for their specific systems of interest, revealing methodological links between existing applications, and highlighting some practical considerations and limitations of these approaches, our goal is to help establish HMMs as a fundamental inferential tool for ecologists.},
+  pmcid = {PMC7702077},
+  pmid = {33073921},
+  file = {/Users/s447341/Zotero/storage/42WFQPCA/McClintock et al. - 2020 - Uncovering ecological state dynamics with hidden Markov models.pdf}
+}
+
+@misc{michelot2025,
+  title = {{{hmmTMB}}: Hidden {{Markov}} Models with Flexible Covariate Effects in {{R}}},
+  shorttitle = {{{hmmTMB}}},
+  author = {Michelot, Th{\'e}o},
+  year = 2025,
+  month = may,
+  number = {arXiv:2211.14139},
+  eprint = {2211.14139},
+  primaryclass = {stat},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.2211.14139},
+  urldate = {2025-08-11},
+  abstract = {Hidden Markov models (HMMs) are widely applied in studies where a discrete-valued process of interest is observed indirectly. They have for example been used to model behaviour from human and animal tracking data, disease status from medical data, and financial market volatility from stock prices. The model has two main sets of parameters: transition probabilities, which drive the latent state process, and observation parameters, which characterise the state-dependent distributions of observed variables. One particularly useful extension of HMMs is the inclusion of covariates on those parameters, to investigate the drivers of state transitions or to implement Markov-switching regression models. We present the new R package hmmTMB for HMM analyses, with flexible covariate models in both the hidden state and observation parameters. In particular, non-linear effects are implemented using penalised splines, including multiple univariate and multivariate splines, with automatic smoothness selection. The package allows for various random effect formulations (including random intercepts and slopes), to capture between-group heterogeneity. hmmTMB can be applied to multivariate observations, and it accommodates various types of response data, including continuous (bounded or not), discrete, and binary variables. Parameter constraints can be used to implement non-standard dependence structures, such as semi-Markov, higher-order Markov, and autoregressive models. Here, we summarise the relevant statistical methodology, we describe the structure of the package, and we present an example analysis of animal tracking data to showcase the workflow of the package.},
+  archiveprefix = {arXiv},
+  keywords = {Statistics - Computation,Statistics - Methodology},
+  file = {/Users/s447341/Zotero/storage/QQATN9TN/Michelot - 2025 - hmmTMB hidden Markov models with flexible covariate effects in R.pdf}
+}
+
+@article{modrak2023,
+  title = {Simulation-Based Calibration Checking for {{Bayesian}} Computation: The Choice of Test Quantities Shapes Sensitivity},
+  shorttitle = {Simulation-Based Calibration Checking for Bayesian Computation},
+  author = {Modr{\'a}k, Martin and Moon, Angie H. and Kim, Shinyoung and B{\"u}rkner, Paul and Huurre, Niko and Faltejskov{\'a}, Kate{\v r}ina and Gelman, Andrew and Vehtari, Aki},
+  year = 2023,
+  month = jan,
+  journal = {Bayesian Analysis},
+  volume = {-1},
+  number = {-1},
+  issn = {1936-0975},
+  doi = {10.1214/23-BA1404},
+  urldate = {2024-10-07},
+  abstract = {Simulation-based calibration checking (SBC) is a practical method to validate computationally-derived posterior distributions or their approximations. In this paper, we introduce a new variant of SBC to alleviate several known problems. Our variant allows the user to in principle detect any possible issue with the posterior, while previously reported implementations could never detect large classes of problems including when the posterior is equal to the prior. This is made possible by including additional data-dependent test quantities when running SBC. We argue and demonstrate that the joint likelihood of the data is an especially useful test quantity. Some other types of test quantities and their theoretical and practical benefits are also investigated. We provide theoretical analysis of SBC, thereby providing a more complete understanding of the underlying statistical mechanisms. We also bring attention to a relatively common mistake in the literature and clarify the difference between SBC and checks based on the data-averaged posterior. We support our recommendations with numerical case studies on a multivariate normal example and a case study in implementing an ordered simplex data type for use with Hamiltonian Monte Carlo. The SBC variant introduced in this paper is implemented in the SBC R package.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/SBZJCK2B/Modrák et al. - 2023 - Simulation-Based Calibration Checking for Bayesian Computation The Choice of Test Quantities Shapes.pdf}
+}
+
+@article{monnahan2017,
+  title = {Faster Estimation of {{Bayesian}} Models in Ecology Using {{Hamiltonian Monte Carlo}}},
+  author = {Monnahan, Cole C. and Thorson, James T. and Branch, Trevor A.},
+  year = 2017,
+  journal = {Methods in Ecology and Evolution},
+  volume = {8},
+  number = {3},
+  pages = {339--348},
+  issn = {2041-210X},
+  doi = {10.1111/2041-210X.12681},
+  urldate = {2025-08-10},
+  abstract = {Bayesian inference is a powerful tool to better understand ecological processes across varied subfields in ecology, and is often implemented in generic and flexible software packages such as the widely used BUGS family (BUGS, WinBUGS, OpenBUGS and JAGS). However, some models have prohibitively long run times when implemented in BUGS. A relatively new software platform called Stan uses Hamiltonian Monte Carlo (HMC), a family of Markov chain Monte Carlo (MCMC) algorithms which promise improved efficiency and faster inference relative to those used by BUGS. Stan is gaining traction in many fields as an alternative to BUGS, but adoption has been slow in ecology, likely due in part to the complex nature of HMC. Here, we provide an intuitive illustration of the principles of HMC on a set of simple models. We then compared the relative efficiency of BUGS and Stan using population ecology models that vary in size and complexity. For hierarchical models, we also investigated the effect of an alternative parameterization of random effects, known as non-centering. For small, simple models there is little practical difference between the two platforms, but Stan outperforms BUGS as model size and complexity grows. Stan also performs well for hierarchical models, but is more sensitive to model parameterization than BUGS. Stan may also be more robust to biased inference caused by pathologies, because it produces diagnostic warnings where BUGS provides none. Disadvantages of Stan include an inability to use discrete parameters, more complex diagnostics and a greater requirement for hands-on tuning. Given these results, Stan is a valuable tool for many ecologists utilizing Bayesian inference, particularly for problems where BUGS is prohibitively slow. As such, Stan can extend the boundaries of feasible models for applied problems, leading to better understanding of ecological processes. Fields that would likely benefit include estimation of individual and population growth rates, meta-analyses and cross-system comparisons and spatiotemporal models.},
+  copyright = {\copyright{} 2016 The Authors. Methods in Ecology and Evolution \copyright{} 2016 British Ecological Society},
+  langid = {english},
+  keywords = {Bayesian inference,hierarchical modelling,Markov chain Monte Carlo,no-U-turn sampler,Stan},
+  file = {/Users/s447341/Zotero/storage/AEIWTH8N/Monnahan et al. - 2017 - Faster estimation of Bayesian models in ecology using Hamiltonian Monte Carlo.pdf}
+}
+
+@incollection{neal2011,
+  title = {{{MCMC}} Using {{Hamiltonian}} Dynamics},
+  booktitle = {Handbook of {{Markov Chain Monte Carlo}}},
+  author = {Neal, Radford M.},
+  editor = {Brooks, Steve and Gelman, Andrew and Jones, Galin and Meng, Xiao-Li},
+  year = 2011,
+  month = may,
+  eprint = {1206.1901},
+  primaryclass = {stat},
+  publisher = {CRC Press},
+  doi = {10.1201/b10905},
+  urldate = {2025-08-10},
+  abstract = {Hamiltonian dynamics can be used to produce distant proposals for the Metropolis algorithm, thereby avoiding the slow exploration of the state space that results from the diffusive behaviour of simple random-walk proposals. Though originating in physics, Hamiltonian dynamics can be applied to most problems with continuous state spaces by simply introducing fictitious "momentum" variables. A key to its usefulness is that Hamiltonian dynamics preserves volume, and its trajectories can thus be used to define complex mappings without the need to account for a hard-to-compute Jacobian factor - a property that can be exactly maintained even when the dynamics is approximated by discretizing time. In this review, I discuss theoretical and practical aspects of Hamiltonian Monte Carlo, and present some of its variations, including using windows of states for deciding on acceptance or rejection, computing trajectories using fast approximations, tempering during the course of a trajectory to handle isolated modes, and short-cut methods that prevent useless trajectories from taking much computation time.},
+  archiveprefix = {arXiv},
+  keywords = {Physics - Computational Physics,Statistics - Computation},
+  file = {/Users/s447341/Zotero/storage/EIGAHYNT/Neal - 2011 - MCMC using Hamiltonian dynamics.pdf}
+}
+
+@article{ogle2020,
+  title = {Ensuring Identifiability in Hierarchical Mixed Effects {{Bayesian}} Models},
+  author = {Ogle, Kiona and Barber, Jarrett J.},
+  year = 2020,
+  journal = {Ecological Applications},
+  volume = {30},
+  number = {7},
+  pages = {e02159},
+  issn = {1939-5582},
+  doi = {10.1002/eap.2159},
+  urldate = {2025-09-11},
+  abstract = {Ecologists are increasingly familiar with Bayesian statistical modeling and its associated Markov chain Monte Carlo (MCMC) methodology to infer about or to discover interesting effects in data. The complexity of ecological data often suggests implementation of (statistical) models with a commensurately rich structure of effects, including crossed or nested (i.e., hierarchical or multi-level) structures of fixed and/or random effects. Yet, our experience suggests that most ecologists are not familiar with subtle but important problems that often arise with such models and with their implementation in popular software. Of foremost consideration for us is the notion of effect identifiability, which generally concerns how well data, models, or implementation approaches inform about, i.e., identify, quantities of interest. In this paper, we focus on implementation pitfalls that potentially misinform subsequent inference, despite otherwise informative data and models. We illustrate the aforementioned issues using random effects regressions on synthetic data. We show how to diagnose identifiability issues and how to remediate these issues with model reparameterization and computational and/or coding practices in popular software, with a focus on JAGS, OpenBUGS, and Stan. We also show how these solutions can be extended to more complex models involving multiple groups of nested, crossed, additive, or multiplicative effects, for models involving random and/or fixed effects. Finally, we provide example code (JAGS/OpenBUGS and Stan) that practitioners can modify and use for their own applications.},
+  copyright = {\copyright{} 2020 by the Ecological Society of America},
+  langid = {english},
+  keywords = {crossed effects,equifinality,fixed effects,hierarchical model,identifiability,MCMC,multi-level model,nested effects,prior distribution,random effects,sum-to-zero,sweeping},
+  file = {/Users/s447341/Zotero/storage/S5F3N58I/Ogle and Barber - 2020 - Ensuring identifiability in hierarchical mixed effects Bayesian models.pdf}
+}
+
+@article{petersen1896,
+  title = {The Yearly Immigration of Young Plaice in the {{Limfjord}} from the {{German}} Sea},
+  author = {Petersen, Carl Georg Johannes},
+  year = 1896,
+  journal = {Report of the Danish Biological Station to the Board of Agriculture},
+  volume = {6},
+  pages = {1--48}
+}
+
+@inproceedings{plummer2003,
+  title = {{{JAGS}}: {{A}} Program for Analysis of {{Bayesian}} Graphical Models Using {{Gibbs}} Sampling},
+  booktitle = {Proceedings of the 3rd International Workshop on Distributed Statistical Computing},
+  author = {Plummer, Martyn},
+  year = 2003,
+  volume = {124},
+  pages = {1--10},
+  publisher = {Vienna, Austria}
+}
+
+@article{pollock1982,
+  title = {A Capture-Recapture Design Robust to Unequal Probability of Capture},
+  author = {Pollock, Kenneth H.},
+  year = 1982,
+  month = jul,
+  journal = {The Journal of Wildlife Management},
+  volume = {46},
+  number = {3},
+  eprint = {3808568},
+  eprinttype = {jstor},
+  pages = {752},
+  issn = {0022541X},
+  doi = {10.2307/3808568},
+  urldate = {2025-08-10},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/Y4TA22KN/Pollock - 1982 - A Capture-Recapture Design Robust to Unequal Probability of Capture.pdf}
+}
+
+@article{pradel2005,
+  title = {Multievent: {{An}} Extension of Multistate Capture--Recapture Models to Uncertain States},
+  shorttitle = {Multievent},
+  author = {Pradel, Roger},
+  year = 2005,
+  journal = {Biometrics},
+  volume = {61},
+  number = {2},
+  pages = {442--447},
+  issn = {1541-0420},
+  doi = {10.1111/j.1541-0420.2005.00318.x},
+  urldate = {2025-08-10},
+  abstract = {Capture--recapture models were originally developed to account for encounter probabilities that are less than 1 in free-ranging animal populations. Nowadays, these models can deal with the movement of animals between different locations and are also used to study transitions between different states. However, their use to estimate transitions between states does not account for uncertainty in state assignment. I present the extension of multievent models, which does incorporate this uncertainty. Multievent models belong to the family of hidden Markov models. I also show in this article that the memory model, in which the next state or location is influenced by the previous state occupied, can be fully treated within the framework of multievent models.},
+  langid = {english},
+  keywords = {Arnason-Schwarz model,Breeding propensity,Canada goose,Hidden Markov model,Jolly-Move model,Memory model},
+  file = {/Users/s447341/Zotero/storage/XQ3QNHUA/Pradel - 2005 - Multievent An Extension of Multistate Capture–Recapture Models to Uncertain States.pdf}
+}
+
+@manual{rcoreteam2025,
+  type = {Manual},
+  title = {R: A Language and Environment for Statistical Computing},
+  author = {{R Core Team}},
+  year = 2025,
+  address = {Vienna, Austria},
+  institution = {R Foundation for Statistical Computing}
+}
+
+@article{royle2006,
+  title = {Generalized Site Occupancy Models Allowing for False Positive and False Negative Errors},
+  author = {Royle, J. Andrew and Link, William A.},
+  year = 2006,
+  journal = {Ecology},
+  volume = {87},
+  number = {4},
+  pages = {835--841},
+  issn = {1939-9170},
+  doi = {10.1890/0012-9658(2006)87[835:GSOMAF]2.0.CO;2},
+  urldate = {2025-08-10},
+  abstract = {Site occupancy models have been developed that allow for imperfect species detection or ``false negative'' observations. Such models have become widely adopted in surveys of many taxa. The most fundamental assumption underlying these models is that ``false positive'' errors are not possible. That is, one cannot detect a species where it does not occur. However, such errors are possible in many sampling situations for a number of reasons, and even low false positive error rates can induce extreme bias in estimates of site occupancy when they are not accounted for. In this paper, we develop a model for site occupancy that allows for both false negative and false positive error rates. This model can be represented as a two-component finite mixture model and can be easily fitted using freely available software. We provide an analysis of avian survey data using the proposed model and present results of a brief simulation study evaluating the performance of the maximum-likelihood estimator and the naive estimator in the presence of false positive errors.},
+  copyright = {\copyright{} 2006 by the Ecological Society of America},
+  langid = {english},
+  keywords = {finite mixture,heterogeneous detection probability,latent class model,multinomial misclassification,multinomial mixtures,nondetection bias,occurrence probability,proportion of area occupied},
+  file = {/Users/s447341/Zotero/storage/3A6RBTGF/Royle and Link - 2006 - Generalized Site Occupancy Models Allowing for False Positive and False Negative Errors.pdf}
+}
+
+@article{royle2009,
+  title = {Analysis of Capture-Recapture Models with Individual Covariates Using Data Augmentation},
+  shorttitle = {Consultant's {{Forum}}},
+  author = {Royle, J. Andrew},
+  year = 2009,
+  journal = {Biometrics},
+  volume = {65},
+  number = {1},
+  eprint = {25502266},
+  eprinttype = {jstor},
+  pages = {267--274},
+  publisher = {[Wiley, International Biometric Society]},
+  issn = {0006-341X},
+  urldate = {2026-02-13},
+  abstract = {I consider the analysis of capture-recapture models with individual covariates that influence detection probability. Bayesian analysis of the joint likelihood is carried out using a flexible data augmentation scheme that facilitates analysis by Markov chain Monte Carlo methods, and a simple and straightforward implementation in freely available software. This approach is applied to a study of meadow voles (Microtus pennsylvanicus) in which auxiliary data on a continuous covariate (body mass) are recorded, and it is thought that detection probability is related to body mass. In a second example, the model is applied to an aerial waterfowl survey in which a double-observer protocol is used. The fundamental unit of observation is the cluster of individual birds, and the size of the cluster (a discrete covariate) is used as a covariate on detection probability.},
+  file = {/Users/s447341/Zotero/storage/LPW4GJ97/Royle - 2009 - Analysis of capture-recapture models with individual covariates using data augmentation.pdf}
+}
+
+@article{royle2012,
+  title = {Parameter-Expanded Data Augmentation for {{Bayesian}} Analysis of Capture--Recapture Models},
+  author = {Royle, J. Andrew and Dorazio, Robert M.},
+  year = 2012,
+  month = feb,
+  journal = {Journal of Ornithology},
+  volume = {152},
+  number = {2},
+  pages = {521--537},
+  issn = {2193-7206},
+  doi = {10.1007/s10336-010-0619-4},
+  urldate = {2025-02-26},
+  abstract = {Data augmentation (DA) is a flexible tool for analyzing closed and open population models of capture--recapture data, especially models which include sources of hetereogeneity among individuals. The essential concept underlying DA, as we use the term, is based on adding ``observations'' to create a dataset composed of a known number of individuals. This new (augmented) dataset, which includes the unknown number of individuals N in the population, is then analyzed using a new model that includes a reformulation of the parameter N in the conventional model of the observed (unaugmented) data. In the context of capture--recapture models, we add a set of ``all zero'' encounter histories which are not, in practice, observable. The model of the augmented dataset is a zero-inflated version of either a binomial or a multinomial base model. Thus, our use of DA provides a general approach for analyzing both closed and open population models of all types. In doing so, this approach provides a unified framework for the analysis of a huge range of models that are treated as unrelated ``black boxes'' and named procedures in the classical literature. As a practical matter, analysis of the augmented dataset by MCMC is greatly simplified compared to other methods that require specialized algorithms. For example, complex capture--recapture models of an augmented dataset can be fitted with popular MCMC software packages (WinBUGS or JAGS) by providing a concise statement of the model's assumptions that usually involves only a few lines of pseudocode. In this paper, we review the basic technical concepts of data augmentation, and we provide examples of analyses of closed-population models (M0, Mh, distance sampling, and spatial capture--recapture models) and open-population models (Jolly--Seber) with individual effects.},
+  langid = {english},
+  keywords = {Hierarchical models,Individual covariates,Individual heterogeneity,Markov chain Monte Carlo,Occupancy models},
+  file = {/Users/s447341/Zotero/storage/ZXQHUWJB/Royle and Dorazio - 2012 - Parameter-expanded data augmentation for Bayesian analysis of capture–recapture models.pdf}
+}
+
+@article{schofield2016,
+  title = {50-{{Year-Old Curiosities}}: {{Ancillarity}} and {{Inference}} in {{Capture}}--{{Recapture Models}}},
+  shorttitle = {50-{{Year-Old Curiosities}}},
+  author = {Schofield, Matthew and Barker, Richard},
+  year = 2016,
+  month = may,
+  journal = {Statistical Science},
+  volume = {31},
+  number = {2},
+  issn = {0883-4237},
+  doi = {10.1214/16-STS550},
+  urldate = {2025-08-13},
+  abstract = {We review developments from the late 1950s, starting with the work of John Darroch, that led to the models of Cormack [Biometrika 51 (1964) 429--438], Jolly [Biometrika 52 (1965) 225--247] and Seber [Biometrika 52 (1965) 249--259] that are commemorated in this volume. We emphasize some of the fundamental contributions that were pivotal and often ahead of their time. We look at how these early contributions helped to shape the field and illustrate important concepts in statistics, including sufficiency, ancillarity, partial likelihoods, missing data and model fitting in the presence of latent variables. We also identify two curiosities. The first is the longheld and mistaken belief that the maximum likelihood estimators for various capture--recapture models are in common. Using various notions of ancillarity, we show that the maximum likelihood estimators from partial models (like the Cormack--Jolly--Seber model) will in general differ from full likelihood approaches (such as the Jolly--Seber model). The second is the belief that model specification in terms of latent variables is a relatively recent advance. We highlight how Jolly (1965) used a state-space model to describe the problem, using latent variables to separate the capture and mortality processes. We show how Markov chain Monte Carlo can be used to fit this model and how it relates to other capture--recapture models specified in terms of latent variables.},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/2AKQL3ST/Schofield and Barker - 2016 - 50-Year-Old Curiosities Ancillarity and Inference in Capture–Recapture Models.pdf}
+}
+
+@article{schwarz1996,
+  title = {A General Methodology for the Analysis of Capture-Recapture Experiments in Open Populations},
+  author = {Schwarz, Carl James and Arnason, A. Neil},
+  year = 1996,
+  journal = {Biometrics},
+  volume = {52},
+  number = {3},
+  eprint = {2533048},
+  eprinttype = {jstor},
+  pages = {860--873},
+  publisher = {International Biometric Society},
+  issn = {0006-341X},
+  doi = {10.2307/2533048},
+  urldate = {2025-04-09},
+  abstract = {We trace the development of a likelihood function representation for the open-population capture-recapture (Jolly-Seber) experiment. We find that the modeling of the birth process in the general model is not consistent with the reduced death-only model and that all formulations to date lead to difficulties in imposing constraints upon the parameters of the birth process. We propose a generalization to the usual Jolly-Seber representation that models births using a multinomial distribution from a super-population. We show how this leads to simplifications in the numerical optimization of the likelihood and how constraints upon the parameters of the model can now be easily imposed. We show how covariate models using auxiliary variables such as sampling effort or weather conditions to explain capture or survival rates can also be easily added. We also show how this model can be generalized to more than one group of animals. Finally, a numerical example is provided which fits a class of models where the capture probabilities, survival probabilities, and birth probabilities can each vary over time or among groups or both. This permits sequential model fitting within a comprehensive model framework, an approach akin to that of Lebreton et al. (1992, Ecological Monographs 62, 67-118).},
+  file = {/Users/s447341/Zotero/storage/P3APC6DJ/Schwarz and Arnason - 1996 - A General Methodology for the Analysis of Capture-Recapture Experiments in Open Populations.pdf}
+}
+
+@incollection{schwarz2008,
+  title = {Chapter 12. {{Jolly-Seber}} Models in {{MARK}}},
+  booktitle = {Program {{MARK}}: {{A Gentle Introduction}}},
+  author = {Schwarz, Carl James and Arnason, A. Neil},
+  year = 2008,
+  edition = {19},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/5BYE8Z7I/Schwarz and Arnason - Jolly-Seber models in MARK.pdf}
+}
+
+@article{seber1965,
+  title = {A {{Note}} on the {{Multiple-Recapture Census}}},
+  author = {Seber, G. A. F.},
+  year = 1965,
+  journal = {Biometrika},
+  volume = {52},
+  number = {1/2},
+  eprint = {2333827},
+  eprinttype = {jstor},
+  pages = {249--259},
+  publisher = {[Oxford University Press, Biometrika Trust]},
+  issn = {0006-3444},
+  doi = {10.2307/2333827},
+  urldate = {2025-04-09},
+  file = {/Users/s447341/Zotero/storage/UKQ8TMTJ/Seber - 1965 - A Note on the Multiple-Recapture Census.pdf}
+}
+
+@misc{sennhenn-reulen2018,
+  title = {Bayesian {{Regression}} for a {{Dirichlet Distributed Response}} Using {{Stan}}},
+  author = {{Sennhenn-Reulen}, Holger},
+  year = 2018,
+  month = aug,
+  number = {arXiv:1808.06399},
+  eprint = {1808.06399},
+  primaryclass = {stat},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.1808.06399},
+  urldate = {2025-03-20},
+  abstract = {For an observed response that is composed by a set - or vector - of positive values that sum up to 1, the Dirichlet distribution (Bol'shev, 2018) is a helpful mathematical construction for the quantification of the data-generating mechanics underlying this process. In applications, these response-sets are usually denoted as proportions, or compositions of proportions, and by means of covariates, one wishes to manifest the underlying signal - by changes in the value of these covariates - leading to differently distributed response compositions. This article gives a brief introduction into this class of regression models, and based on a recently developed formulation (Maier, 2014), illustrates the implementation in the Bayesian inference framework Stan.},
+  archiveprefix = {arXiv},
+  keywords = {Statistics - Methodology},
+  file = {/Users/s447341/Zotero/storage/GZW8ZHWI/Sennhenn-Reulen - 2018 - Bayesian Regression for a Dirichlet Distributed Response using Stan.pdf}
+}
+
+@misc{socolar2023,
+  title = {Introducing {{flocker}}: An {{R}} Package for Flexible Occupancy Modeling via {{brms}} and {{Stan}}},
+  shorttitle = {Introducing Flocker},
+  author = {Socolar, Jacob B. and Mills, Simon C.},
+  year = 2023,
+  month = oct,
+  publisher = {Ecology},
+  doi = {10.1101/2023.10.26.564080},
+  urldate = {2025-09-11},
+  abstract = {Abstract                                                        Occupancy models are a widespread tool for analyzing biological survey data, but packages for fitting these models offer a limited variety of effects structures.                                                                  We developed                   R                   package                   flocker                   to connect occupancy models (single- and multi- species; single- and multi-season) to the uniquely powerful formula syntax of                   R                   package                   brms                   .                                                                                   Using familiar formula-based syntax,                   flocker                   models can readily incorporate a wide array of effects structures, including phylogenetic random effects, splines, Gaussian processes, autoregressive structures, monotonic effects, and nonlinear predictors. These are available for use in formulas for occupancy, detection, colonization, extinction, and autologistic terms (as applicable to the model type).                   flocker                   additionally provides functionality for data simulation, posterior prediction, and model comparison, following well-documented statistical decisions that we put forward as best practices.                                                                                   We anticipate that                   flocker                   will facilitate the work of practitioners who seek added realism in occupancy models. We further hope that                   flocker                   's synthesis of these models will help inform best practices around occupancy modeling.},
+  archiveprefix = {Ecology},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/VJG3RP4D/Socolar and Mills - 2023 - Introducing flocker an R package for flexible occupancy modeling via brms and Stan.pdf}
+}
+
+@manual{socolar2024,
+  type = {Manual},
+  title = {{{flocker}}: {{Flexible}} Occupancy Estimation with {{Stan}}},
+  author = {Socolar, Jacob B. and Mills, Simon C.},
+  year = 2024,
+  doi = {10.32614/CRAN.package.flocker}
+}
+
+@book{standevelpmentteam,
+  title = {Stan {{User}}'s {{Guide}}},
+  author = {{Stan Develpment Team}},
+  edition = {2.36},
+  urldate = {2025-08-10},
+  file = {/Users/s447341/Zotero/storage/THWHFJC4/Stan User's Guide.pdf}
+}
+
+@misc{vehtari2024,
+  title = {{{loo}}: {{Efficient}} Leave-One-out Cross-Validation and {{WAIC}} for {{Bayesian}} Models},
+  author = {Vehtari, Aki and Gabry, Jonah and Magnusson, M{\aa}ns and Yao, Yuling and B{\"u}rkner, Paul-Christian and Paananen, Topi and Gelman, Andrew},
+  year = 2024
+}
+
+@article{white1999,
+  title = {Program {{MARK}}: {{Survival}} Estimation from Populations of Marked Animals},
+  shorttitle = {Program {{MARK}}},
+  author = {White, Gary C. and Burnham, Kenneth P.},
+  year = 1999,
+  month = jan,
+  journal = {Bird Study},
+  volume = {46},
+  pages = {S120-S139},
+  issn = {0006-3657, 1944-6705},
+  doi = {10.1080/00063659909477239},
+  urldate = {2025-08-10},
+  langid = {english},
+  file = {/Users/s447341/Zotero/storage/V87WPBCL/White and Burnham - 1999 - Program MARK survival estimation from populations of marked animals.pdf}
+}
+
+@article{wickham2019,
+  title = {Welcome to the {{tidyverse}}},
+  author = {Wickham, Hadley and Averick, Mara and Bryan, Jennifer and Chang, Winston and McGowan, Lucy D'Agostino and Fran{\c c}ois, Romain and Grolemund, Garrett and Hayes, Alex and Henry, Lionel and Hester, Jim and Kuhn, Max and Pedersen, Thomas Lin and Miller, Evan and Bache, Stephan Milton and M{\"u}ller, Kirill and Ooms, Jeroen and Robinson, David and Seidel, Dana Paige and Spinu, Vitalie and Takahashi, Kohske and Vaughan, Davis and Wilke, Claus and Woo, Kara and Yutani, Hiroaki},
+  year = 2019,
+  journal = {Journal of Open Source Software},
+  volume = {4},
+  number = {43},
+  pages = {1686},
+  doi = {10.21105/joss.01686}
+}
+
+@book{zucchini2017,
+  title = {Hidden {{Markov Models}} for {{Time Series}}: {{An Introduction Using R}}, {{Second Edition}}},
+  shorttitle = {Hidden {{Markov Models}} for {{Time Series}}},
+  author = {Zucchini, Walter and MacDonald, Iain L. and Langrock, Roland},
+  year = 2017,
+  month = dec,
+  edition = {2},
+  publisher = {{Chapman and Hall/CRC}},
+  address = {New York},
+  doi = {10.1201/b20790},
+  abstract = {Hidden Markov Models for Time Series: An Introduction Using R, Second Edition illustrates the great flexibility of hidden Markov models (HMMs) as general-purpose models for time series data. The book provides a broad understanding of the models and their uses. After presenting the basic model formulation, the book covers estimation, forecasting, decoding, prediction, model selection, and Bayesian inference for HMMs. Through examples and applications, the authors describe how to extend and generalize the basic model so that it can be applied in a rich variety of situations. The book demonstrates how HMMs can be applied to a wide range of types of time series: continuous-valued, circular, multivariate, binary, bounded and unbounded counts, and categorical observations. It also discusses how to employ the freely available computing environment R to carry out the computations. Features Presents an accessible overview of HMMs Explores a variety of applications in ecology, finance, epidemiology, climatology, and sociology Includes numerous theoretical and programming exercises Provides most of the analysed data sets online New to the second edition A total of five chapters on extensions, including HMMs for longitudinal data, hidden semi-Markov models and models with continuous-valued state process New case studies on animal movement, rainfall occurrence and capture-recapture data},
+  isbn = {978-1-315-37248-8}
+}

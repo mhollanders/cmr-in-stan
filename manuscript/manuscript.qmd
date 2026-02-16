@@ -1,0 +1,385 @@
+---
+title: "Efficient Bayesian implementations of capture-mark-recapture models with Stan"
+author: Matthijs Hollanders^1,2^
+abstract: |
+  ^1^Quantecol, Cumbalum NSW Australia
+  
+  ^2^Centre for Conservation Science, University of Newcastle, Newcastle NSW Australia
+  
+  \ 
+  
+  **Running Headline:** Bayesian capture-mark-recapture in Stan
+  
+  **Acknowledgements:** I am grateful to Dalton Hance for efficiently computing the probbility of no more observations after last capture ($\chi$), Bob Carpenter to providing guidance on accounting for unequal survey intervals in the entry process, Marc Kéry to feedback on the manuscript, and Ben Augustine for helpful discussions.
+  
+  **Data Availability:** All code, data, and simulations are provided on [github.com/mhollanders/cmr-in-stan](https://github.com/mhollanders/cmr-in-stan.git).
+  
+  **Conflict of Interest Statements:** The author declares no conflicts of interest.
+  
+format:
+  pdf:
+    keep-tex: true
+    mathspec: true
+    include-in-header:
+      text: |
+        \usepackage{lineno}
+    include-before-body:
+      text: |
+        \linenumbers
+linenumbers: true
+bibliography: cmr-in-stan.bib
+csl: methods-in-ecology-and-evolution.csl
+execute:
+  include: false
+font: Times New Roman
+linestretch: 2
+---
+
+\newpage
+
+
+# Abstract
+
+  1. Capture-mark-recapture (CMR) methods are a mainstay of ecological statistics for estimating demographic parameters and population sizes in animal populations. The advent of Bayesian methods made complex hierarchical formulations accessible to practitioners, largely relying on conditional likelihood formulations with latent discrete parameters. However, modern gradient-based MCMC methods that are the gold standard for sampling-based Bayesian estimation do not accommodate discrete parameters and require they are marginalised from the models.
+  2. In this contribution, I provide an overview of modern CMR methods with efficient implementation in Stan, a probabilistic programming language. Models are categorised as Cormack-Jolly-Seber, conditioned on first capture, and Jolly-Seber, additionally estimating the entry process, with robust design, multistate, and multievent extensions covered for each type. All 16 model types are constructed in continuous time, using mortality and transition rates instead of probabilities, to accommodate unequal survey intervals. 
+  3. A novel component of this work is to accommodate unequal survey interval lengths in the entry process of Jolly-Seber models, which has been largely ignored despite being routinely accounted for in the survival process. In our case study, accounting for unequal intervals yielded better fit to data and considerable differences in population size estimates, highlighting the sensitivity of derived quantities to unrealistic model assumptions.
+  4. Log likelihood functions and Stan programs are provided for all model types which are overloaded to accommodate both time-varying and individual-by-time varying effects, with the former in particular leveraging the factorisability of models to gain considerable efficiency gain. Jolly-Seber models, additionally, include functions to compute derived quantities like population sizes and entries and exits from the population using the forward-backward sampling algorithm.
+
+  **Keywords:** capture-mark-recapture, Bayesian, Stan, Hamiltonian Monte Carlo, marginalisation, Cormack-Jolly-Seber, Jolly-Seber, robust design, multistate, multievent, hidden Markov model
+  
+\newpage
+
+# Introduction
+
+Capture–mark–recapture (CMR) methods are a cornerstone of ecological statistics, used to estimate demographic parameters and produce unbiased estimates of population size in wild animal populations. Their power lies in tracking individual fates over time, yielding partially observed individual time series due to imperfect detection. Repeated surveys in a study area, coupled with the identification of individuals through natural markings (e.g., pelage patterns) or artificial tags, produce detection matrices from which quantities such as survival, recruitment, and population size can be estimated. Since their inception over a century ago [@petersen1896], CMR methods have undergone extensive methodological development. Beginning with "closed-population" methods, where repeat counts facilitate estimating population size under the assumption populations are closed to entries (births and immigration) and exits (deaths and emigration), modern methods are "open-population" where these assumptions are relaxed.
+
+Frequentist approaches to inference for these models have historically dominated CMR analysis, exemplified by the popularity of Program MARK [@white1999], which has been cited 7,205 times (24 June 2025, Web of Science). The rise of Bayesian methods during the “MCMC revolution” [@martin2024] made it increasingly attractive to fit CMR models via Markov chain Monte Carlo (MCMC), aided by user-friendly BUGS-language software such as WinBUGS [@lunn2000], JAGS [@plummer2003], and NIMBLE [@devalpine2017]. BUGS-style modelling greatly improved accessibility to custom models in ecology, in part because latent discrete states—--such as alive/dead status in CMR, occupancy states in site-occupancy models, and latent abundances in *N*-mixture models---are straightforward to implement using conditional likelihood formulations. While discrete parameters are convenient for specifying models and deriving quantities such as population sizes, they are often computationally inefficient and can lead to poor exploration of the posterior tails [@standevelpmentteam]. Marginal likelihood formulations, which integrate over the discrete states, tend to be more efficient and lead to more efficient exploration of the posterior distribution while still permitting inference on those states.
+
+Modern MCMC algorithms leverage gradients of the log posterior density for much more efficient exploration of the posterior than traditional samplers. The No-U-Turn Sampler [NUTS, @hoffman2014] variant of Hamiltonian Monte Carlo [@neal2011] is a state-of-the-art algorithm implemented in probabilistic programming languages (PPLs) such as Stan [@carpenter2017], PyMC [@abril2023pymc], and NIMBLE [@devalpine2017]. Another key advantage of these algorithms is the ability to diagnose problems in the posterior geometry via signals like divergent transitions, alerting the practitioner that the estimation procedure cannot be trusted to produce correct inference [@betancourt2018]. However, because HMC requires differentiable parameters [@neal2011], it cannot directly accommodate the discrete latent states of ecological models. This limitation has slowed adoption of HMC-based tools in ecology, despite their clear advantages over traditional samplers [@monnahan2017]. Posterior inference on latent states in marginalised models is possible but requires specialised algorithms such as the forward-backward algorithm [@zucchini2017]--—techniques that remain inaccessible to many practitioners (but see @kellner2021 and @socolar2023 for recent contributions for ecological models).
+
+In this paper, I provide an overview of CMR methods and present novel, efficient Stan implementations of their marginal likelihoods. Many CMR models can be expressed as product multinomials, allowing shared terms to be computed once while specifying individual-level log densities, making Stan an ideal implementation platform. We organise our treatment of CMR models into two broad categories: Cormack–Jolly–Seber (CJS) models, which condition on an individual’s first capture, and Jolly–Seber (JS) models, which explicitly model the process by which individuals enter the study and thus facilitate inference on population size and other population-level quantities. Within each category, we cover single-state, multistate, and multievent variants, with and without robust design.
+
+# Overview of contribution and implementations
+
+Descriptions and Stan implements are provided for a wide range of open-population CMR models, beginning with Cormack–Jolly–Seber (CJS) models, which conditioned on first capture, and extending them to robust design obsermation models and multistate (including multievent) configurations. We then describe Jolly–Seber (JS) models, which additionally model the entry process of individuals in the population into the studied (or marked) sample and allow estimation of recruitment and population size. In all open-population CMR models, the unit of observation is the time series of detections of a marked individual, making the individual the level where the likelihood factorises. Therefore, the likelihood is computed at the level of the individual, which is also where leave-one-out cross validation (LOO-CV) is evaluated [@burkner2021; @socolar2023]. 
+
+For each configuration, we supply Stan programs and individual-level log-likelihood functions that handle both (1) survey-varying parameters and (2) individual-by-survey–varying parameters. The first form enables precomputation of terms and is considerably faster. All likelihood functions were validated using simulation-based calibration [SBC, @modrak2023] with CmdStanR 0.9 [@gabry2025] in R 4.5.1 [@rcoreteam2025] (Appendix I). All Stan programs and associated functions are provided at [github.com/mhollanders/cmr-in-stan](https://github.com/mhollanders/cmr-in-stan.git).
+
+Basic CMR methods assume survey interval lengths are equal between sampling sessions (i.e., weekly or monthly intervals). However, because unequal survey intervals are the rule rather than the exception in field studies, we accommodate unequal sampling intervals in all models by parameterising ecological processes in continuous time, using rates rather than probabilities. For example, mortality is modeled via a hazard rate $h$, with survival probability $\phi$ over the survey interval $\tau$ given by $\phi^\tau = e^{-h \tau}$. Modelling hazard rates has several advantages over survival probabilities, including time invariance under a log-link, which entails that covariate effects are not affected by the chosen survey interval, unlike logit-linear functions for survival probabilities [@ergon2018]. More importantly, unequal intervals in multistate models cannot be accommodated without continuous time transition rate matrices ($\boldsymbol{Q}$) [@glennie2023]. The likelihood still requires discrete time transition probability matrices ($\boldsymbol{P}$) which cannot be simply exponentiated by a time interval because individuals may transition back and forth between different alive states multiple times within that interval, whereas mortality can only occur once. A novel parameterisation is also introduced for the entry process in JS models that incorporates unequal intervals, an aspect rarely addressed in previous work.
+
+All Stan programs return the individual-level log likelihoods, enabling Pareto smoothed importance sampling leave-one-out cross-validation (PSIS-LOO-CV) at the level of the individual [@socolar2024] via the `loo` package [@vehtari2024] and prior log densities for sensitivity checks using powerscaling via the `priorsense` package [@kallioinen2023]. For JS models we recover latent survey-level population sizes ($\boldsymbol{N}$), entries into ($\boldsymbol{B}$) and exits from ($\boldsymbol{D}$) the population for each survey, as well as the super-population $N_\textrm{super}$ (the total number of individuals that were alive and available for capture during the entirety of the study), using the forward-backward sampling algorithm to capture full posterior uncertainty. In multistate and multievent JS models, these quantities are computed fore each state.
+
+Efficiency in models is further improved by:
+
+  1.  Vectorised computations for the probability of no further detections after a given survey;
+  2.  Sharing this term and terms for the probability of first detection on a given survey across all individuals with the same first and last capture;
+  3.  In JS models with data augmentation [@dupuis2007], computing the log likelihood of augmented individuals only once when no individual effects are present.
+
+# Models
+
+## Cormack-Jolly-Seber
+
+The CJS model is the canonical open-population CMR model [@cormack1964; @jolly1965; @seber1965], where unique individuals indexed $i \in \{ 1, \dots, I \}$ are detected during surveys $j \in \{ 1, \dots, J \}$ conducted in a study area. Following each individual's survey of first detection $f \in \{ 1, \dots, J-1 \}$^[Because CJS models condition on first capture, individuals first captured on the final survey do not contribute to the likelihood.], individuals survive survey intervals $\boldsymbol{\tau} = \left( \tau_1, \dots, \tau_{J-1} \right)$ with survival probabilities $\boldsymbol{\phi} = \exp(-\boldsymbol{h\tau})$, where the mortality hazard rates $\boldsymbol{h}$ can be modeled flexibly as a function of individual, survey, and survey-varying individual effects. In CMR models the ecological process usually estimates *apparent* survival, as we cannot generally disentangle mortality from permanent emigration from the site. Conditional on being alive, individuals are detected with probabilities $\boldsymbol{p} = \left( p_1, \dots, p_{J-1} \right)$, where $p_j$ is the detection probability during survey $j+1$, which can similarly be modeled flexibly (one caveat is that time-varying mortality rates and detection probabilities lead to a lack of identifability in the final survey [@lebreton1992]). The assumed data-generating process for an individual is thus:
+
+$$
+\begin{aligned}
+z_j &\sim \mathrm{Bernoulli} \left( z_{j-1}\phi_{j-1} \right) \\
+y_{j} &\sim \mathrm{Bernoulli} \left( z_{j}p_{j - 1} \right)
+\end{aligned}, \qquad j \in \{ f + 1, \dots, J \},
+$$ {#eq-cjs-dgp}
+
+where $\boldsymbol{z} = \left( z_f, \dots, z_J \right)$ are the latent states indicating whether an individual is alive ($z=1$ is alive, $z=0$ is dead), with $z_f = 1$, and $\boldsymbol{y} = \left( y_{f + 1}, \dots, y_J \right)$ is the observed detection history ($y=1$ is detected, $y=0$ is not). The marginal likelihood of an individual detection history $\boldsymbol{y}$ is given as follows, where for brevity $\boldsymbol{q} = \boldsymbol{1} - \boldsymbol{p}$ are the probabilities of not being detected:
+
+$$
+\pi \left(\boldsymbol{y} \mid \boldsymbol{\phi}, \boldsymbol{p}, f, l \right) = \prod_{j = f + 1}^l \left[\phi_{j-1}q_{j-1} \left(\frac{p_{j-1}}{q_{j-1}}\right)^{y_j} \right]\chi_l,
+$$ {#eq-cjs}
+
+where $l \in \{ f, \dots, J \}$ is the last survey of detection, the expression $q \left( \tfrac{p}{q} \right)^{y_j}$ ensures a detection increments detection probability $p$ and a non-detection increments $q$, and $\chi_l$ is the probability of never observing the individual again after its last capture. Note that the likelihood still uses $\phi$ despite it being parameterised in terms of $h$ in the models. Typically, $\boldsymbol{\chi} = ( \chi_1, \dots, \chi_{J - 1} )$ is computed recursively which is inefficient when $J$ is large. A more efficient computation is presented as one minus the probability of detecting the individual again during one of $m \in \{l + 1, \dots, J\}$ surveys (i.e. the sum of mutually exclusive potential detection occasions) (pers. comm. Dalton Hance). That is, for a given survey of last capture we express:
+
+$$
+\chi_l = 1 - \sum_{m = l + 1}^{J}\left[\phi_l\left( \prod_{j = l + 2}^m q_{j-1}\phi_{j-1}\right)p_{m-1} \right], \qquad j \in \{ 1, \dots, J - 1 \}.
+$$ {#eq-chi}
+
+This approach avoids redundant computations and is vectorisable, making it efficient in Stan. Moreover, $\boldsymbol{\chi}$ can also be pre-computed and shared across individuals when no individual effects are included.
+
+### Robust Design
+
+To improve parameter identifability and precision in estimates of mortality rates, surveys can be conducted following the "robust design" [@pollock1982], which entails performing several "secondary surveys" indexed $k \in \{ 1, \dots, K_j \}$ within primary surveys (e.g., 2 consecutive daily surveys within monthly primary sessions). The approach was originally introduced to account for temporary emigration (i.e., unavailability for capture), a variant of multistate model, but always improves parameter estimates by segregating the ecological and observation processes. Variable number of secondary surveys can be conducted, including $K_j = 1$ for some primaries. The closure assumption implies that we assume no animals are leaving the population, either through death or emigration, within a primary occasion. In robust design CJS models, we can now estimate detection probabilities in the primary of first capture, as we only need to condition on the secondary of first capture $g \in \{ 1, \dots, K_j \}$, leaving $K_f - 1$ remaining detection probabilities in $f$. Additionally, the last survival and detection parameters are now also identifiable. The assumed data-generating process of the observation model is modified from @eq-cjs as:
+
+$$
+y_{jk} \sim \mathrm{Bernoulli} \left( z_{j}p_{jk} \right), \quad j \in \{1, \dots, J\}, \ k \in \{ 1, \dots, K_j \},
+$$ {#eq-cjs-dgp}
+
+and the marginal likelihood for an individual is expressed as follows, where $\boldsymbol{y}$ and $\boldsymbol{p}$ are now $J \times K$ matrices of detections/non-detections and detection probabilities, respectively, for each individual:
+
+$$
+\begin{aligned}
+\pi \left(\boldsymbol{y} \mid \boldsymbol{\phi}, \boldsymbol{p}, f, g, l \right) &= 
+  \prod_{k \neq g}^{K_f} q_{fk} \left( \frac{p_{fk}}{q_{fk}} \right)^{y_{fk}} \\
+  &\quad \cdot \prod_{j = f + 1}^{l} \left[\phi_{j-1} \prod_{k = 1}^{K_j} q_{jk} \left(\frac{p_{jk}}{q_{jk}}\right)^{y_{jk}} \right]
+  \chi_l,
+\end{aligned}
+$$ {#eq-cjs-rd}
+
+where 
+
+$$
+\begin{aligned}
+\chi_l = 1 - \sum_{m = l + 1}^{J}\left[ \phi_l \left( \prod_{j = l + 2}^{m-1}  \phi_{j-1} \prod_{k=1}^{K_j}q_{jk} \right) \left( 1 - \prod_{k=1}^{K_m}q_{mk} \right) \right], 
+\end{aligned}
+$$ {#eq-chi-rd}
+
+with $1 - \prod_{k=1}^{K_m}q_{mk}$ giving the probability of making at least one detection in primary occasion $m$.
+
+### Multistate 
+
+Multistate models are a popular variant of CMR models where alive individuals are assigned to $s \in \{ 1, \dots, S \}$ distinct states, such as disease states (uninfected/infected), age (juvenile/adult), or breeding status (non-breeder/breeder). Instead of yielding detection vectors (or matrices in robust design) consisting of 0s and 1s to indicate an individual's (non)detections, multistate data consist of 0s for non-detections and $y_{ij[k]} = s$ to denote a detection in a particular state. Mortality rates and detection probabilities can be estimated separately for each state, as well as transition rates between states (e.g., infection dynamics). The ecological process consisting of mortality and state transitions is determined by a stochastic matrix ($\boldsymbol{P}$), equivalent called transition probability matrix, which we compute from an infinitesimal generator matrix ($\boldsymbol{Q}$) as $\boldsymbol{P}_j = \exp\left(\boldsymbol{Q}\tau_j\right)$, where $\exp$ is the matrix exponential, to accommodate unequal survey intervals. Stochastic matrices are parameterised with probabilties where rows (or columns) sum to 1, and generator matrices are parameterised with rates on the off-diagonals and the negative sum of the off-diagonals on the diagonal, ensuring that all rows sum to 0. With two states (i.e., $S=2$) where transitions can occur freely between both states, $\boldsymbol{Q}$ and $\boldsymbol{P}$ are $3 \times 3$ matrices, where the final absorbing state is the dead state:
+
+$$
+\begin{aligned}
+\boldsymbol{Q} &= \begin{bmatrix}
+  -(q_1 + h_1) & q_1 & h_1 \\
+  q_2 & -(q_2 + h_2) & h_2 \\
+  0 & 0 & 0
+\end{bmatrix} \\
+\boldsymbol{P} &= \exp(\boldsymbol{Q}),
+\end{aligned}
+$$ {#eq-Q}
+
+where $\boldsymbol{h} = (h_1, \dots, h_S)$ are the state-specific mortality rates and $\boldsymbol{q} = (q_1, \dots, q_T )$ are the transition rates between states (maximum of $T = S (S - 1)$ distinct rates). Note that the states of departure (state during survey $j-1$) are in the rows and the states of arrival (state during survey $j$) are in the columns. Detection probabilities $\boldsymbol{p} = (p_1, \dots, p_S)$ can be estimated by state and survey and are represented in another transition probability matrix $\boldsymbol{O}$, given for the $S=2$ example:
+
+$$
+\boldsymbol{O} = \begin{bmatrix}
+  p_1 & 0 & 1 - p_1 \\
+  0 & p_2 & 1 - p_2 \\
+  0 & 0 & 1,
+\end{bmatrix}
+$$ {#eq-O}
+
+where the latent ecological state is in the rows (where the final row represents probabilities associated with being dead) and the observed state is in the columns (with the final column representing a non-detection). Our assumed data-generating process for an individual is now as follows, where the matrix subscript subsets the associated row of the stochastic matrices: 
+
+$$
+\begin{aligned}
+z_j &\sim \mathrm{Categorical} \left( \exp \left( \boldsymbol{Q}\tau_{j-1} \right)_{[z_{j-1}]} \right) \\
+y_j &\sim \mathrm{Categorical} \left( {\boldsymbol{O}}_{[z_j]} \right),
+\end{aligned} \qquad j \in \{ f + 1, \dots, J \}
+$$ {#eq-cjs-ms-dgp}
+
+Note that the typical approach in BUGS/JAGS is to convert $y_{ij[k]} = 0$ to $S + 1$ and to model by the dead state explicitly, but this is not required when specifying the log density in Stan. The marginal likelihood is unwieldy to express (see Stan programs), but our provided Stan implementations use the forward algorithm [@zucchini2017] for alive states only (that is, omitting row and column $S+1$ from $\boldsymbol{P}$) until last capture, limiting unnecessary computation depending on whether or not individuals were detected in occasions $j$ and $j-1$. Additionally, we compute $\boldsymbol{\chi}$, the probability of not making another detection after last being observed in a particular state, efficiently by modifying @eq-chi to compute the probability of making at least one more detection while accounting for possible state transitions. Robust design implementations are also provided, which are generally required to identify state-specific detection probabilities alongside transition rates [@hollanders2022]. Our SBC results qualitatively reflect this, with large uncertainties associated with the single survey variants.
+
+### Multievent
+
+Where multistate models assume that individuals are always correctly observed in their respective states (e.g., individuals infected by a pathogen are never detected without infection), multievent models account for imperfect state assignment or state uncertainty by including false negatives and/or positives [@pradel2005]. Failing to account for incorrect state assignment can seriously bias parameter estimates, particularly transition rates between respective states, and multievent models should be the default in such circumstances [@hollanders2022]. Multievent models are constructed like multistate models except that observed individuals have an additional $S \times S$ stochastic matrix $\boldsymbol{E}$ associated with their state assignments, shown here for $S = 2$ with false negatives ($1 - \delta$) and false positives ($\lambda$) associated with being detected in state $S = 2$ (for example, in disease-structured models where state 2 is the infected state):
+
+$$
+\boldsymbol{E} = \begin{bmatrix}
+  1 - \lambda & \lambda  \\
+  1 - \delta & \delta
+\end{bmatrix}.
+$$ {#eq-E}
+
+The uncertain state assignment means that unlike in typical multistate models, the initial states at first capture are unknown. The initial states are governed by a simplex $\boldsymbol{\eta} = \left(\eta_1, \dots, \eta_S\right)$, where $\sum_j \eta_j = 1$, which may further vary by survey, $z_f \sim \mathrm{Categorical} \left( \boldsymbol{\eta}_{[f]} \right)$. These parameters may not always be of direct ecological interest, and Stan can handle survey-varying simplices efficiently with the new `stochastic_matrix` parameter types. Alternatively, the stationary distributions can be computed from $\boldsymbol{q}$ to reduce model dimensionality, an approach that is also implemented for similar models in the R package `hmmTMB` [@michelot2025]. When $S = 2$, the stationary distribution can be computed from the transition rates by normalising $\boldsymbol{q}$, potentially by survey $j$, and reversing the order of the elements, 
+
+$$
+\boldsymbol{\eta}_j := \frac{\operatorname{reverse}\left(\boldsymbol{q}_j\right)}{\sum\boldsymbol{q}_j}.
+$$ {#eq-eta}
+
+Multievent models generally require robust design sampling for adequate parameter identifability unless more informative priors are used [@hollanders2022], and models with both false negatives and false positives generally have a multi-modal likelihood [@royle2006], potentially requiring some parameters constraints to imposed (e.g., $\lambda < \delta$). They are also computationally costly in Stan, losing a considerable degree of factorisability as potentially none of the observations can ever be assigned to a state with certainty. Additionally, the multievent constructions do not compute $\boldsymbol{\chi}$ but rather marginalise over all possible ecological states, including the absorbing dead state, use the forward algorith. Nevertheless, when state assignment errors cannot be ruled out, as is commonplace is some study designs, multievent models are the appropriate way to produce unbiased estimates of the ecological process under study.
+
+## Jolly-Seber
+
+JS models feature the same likelihood computations as CJS after first capture but additionally model the process by which individuals enter the study, which in some contexts may be interpreted as recruitment [@schwarz1996]. Observed individuals $I$ are considered as a subset of the super-population $N_\textrm{super}$, defined as the total number of individuals that were ever alive and available for capture in the study. The number of entries to the population during each survey $\boldsymbol{B} = \left(B_1, \dots, B_J\right)$ are modeled as multinomially distributed with entry probabilities $\boldsymbol{\beta} = \left(\beta_1, \dots, \beta_J\right)$: 
+
+$$
+\boldsymbol{B} \sim \mathrm{Multinomial} \left(N_\textrm{super}, \boldsymbol{\beta} \right),
+$$ {#eq-B}
+
+where $N_\textrm{super} = \sum_{j=1}^J B_j$ and $\boldsymbol{\beta}$ is a simplex (vector of probabilities that sums to 1). The entry probabilies here have an ecological interpretation and can be modeled as a function of covariates or random effects (although the interpretation of $\beta_1$ differs fundamentally, as it represents the proportion of the superpopoulation that is the starting population size at $j=1$). This contrasts with the classic approach employed in BUGS, where $\boldsymbol{\beta}$ is generally derived from the ecologically uninterpretable "removal entry probabilities" [@royle2012; @dorazio2020].
+
+In JS models there are $J$ detection probabilities to estimate, as the unknown entry occasion $b_i \in \{1, \dots, J\}$ means we do not condition on first capture. The data-generating process for an individual in a JS model is thus as follows:
+
+$$
+\begin{aligned}
+b &\sim \mathrm{Categorical} \left( \boldsymbol{\beta} \right) \\
+z_b &= 1 \\
+z_j &\sim \mathrm{Bernoulli} \left( z_{j-1}\phi_{j-1} \right), &\qquad j \in \{ b + 1, \dots, J \} \\
+y_{j} &\sim \mathrm{Bernoulli} \left( z_{j}p_j \right), &\qquad j \in \{ b, \dots, J \}
+\end{aligned}
+$$ {#eq-js-dgp}
+
+In the likelihood computation we have to marginalise out the discrete entry occasions $\boldsymbol{b}$, which involves incrementing the following term to @eq-cjs:
+
+$$
+\sum_{b = 1}^f \left[ \beta_b q_b \prod_{j = b + 1}^f \phi_{j - 1} q_j \right] \frac{p_f}{q_f}
+$$ {#eq-js}
+
+In the absence of individual effects, individuals with the same survey of first capture share the same likelihood prior to first capture, reducing computational burden. JS models also benefit from the robust design as it leads to identifiability of the first entry and detection probabilities [@schwarz1996]. Stan programs and associated functions are provided for robust designs, and the SBC file clearly demonstrates the increase in precision of the parameter estimates compared to survey designs without robust design (Appendix I).
+
+Since $N_\textrm{super}$ is unknown, we use data augmentation [@dupuis2007] of $I_\textrm{aug}$ all-0 (never detected) detection histories with a nuisance inclusion parameter $\psi$ to determine what proportion of the total capture histories belonged to real individuals in $N_\textrm{super}$, where $N_\textrm{super} \sim \mathrm{Binomial} \left(I + I_\textrm{aug}, \psi \right)$. The Stan functions included on GitHub (specifically the `js_*_rng()` functions that compute derived quantities) print warnings when $N_\textrm{super} = I + I_\textrm{aug}$ for each posterior draw, indicating the detection history was insufficiently augmented with all-0 detection histories.
+
+A key advantange of using Stan to specify the log likelihood is that when there are no individual effects, the log likelihood is the same for all augmented individuals and can thus be computed once, greatly reducing computational burden. For JS models, additional likelihood function signatures are provided (e.g., `js2()`) that accommodate individual effects for the observed sample but only perform one computation for augmented individuals. This "collapsed" likelihood version assumes all augmented individuals share the same parameters (i.e., the average across the sampled population), and forego imputing values for each augmented individual, therefore reducing computational burden [@royle2009]. Practitioners could use these functions to determine roughly how many all-0 detection histories should be augmented before running a "full" model where parameters are imputed for all augmented individuals, to avoid computing a large proportion of log likelihoods for surplus augmented individuals.
+
+### Parametric forms for the entry probabilities
+
+The canonical distribution for modeling simplexes is the Dirichlet such that $\boldsymbol{\beta} \sim \mathrm{Dirichlet} \left( \boldsymbol{\alpha} \right)$, where $\boldsymbol{\alpha} = \left( \alpha_1, \dots, \alpha_J\right)$ is the shape (or concentration) vector which in the context of CMR may be loosely interpreted as the "entry rates" or expected number of individuals entering per survey. The Dirichlet distribution is produced by normalising the vector $\boldsymbol{u} \sim \mathrm{Gamma} \left( \boldsymbol{a}, \boldsymbol{1} \right)$ (with $\mathbb{E}(\boldsymbol{u}) = \boldsymbol{\alpha}$) where $\beta_j := \frac{u_j}{\sum_{j=1}^J u_j}$, thus it can be considered a normalised Gamma process. Although the Dirichlet is a natural approach for modelling the number of entries in a multinomial process, the covariance structure is completely determined by the vector $\boldsymbol{\alpha}$ and is always negative between the different entries of the vector [@aguilar2025].
+
+As an alternative to the Dirichlet, the logistic-normal distribution [@aitchison1980] can be used to model the simplex of entry probabilities with a flexible covariance structure. Here, $\beta_j := \frac{e^{v_j}}{\sum_j^J e^{v_j}}$ where $\boldsymbol{v} \sim \mathrm{Normal} \left( \boldsymbol{0}, \Sigma \right)$ and can be considered a normalised lognormal process, where $\frac{e^{v_j}}{\sum_j^J e^{v_j}}$ is the softmax transformation. Since the softmax function is translation invariant (i.e., unchanged by adding the same constant to every component of the vector), only $J-1$ elements are freely estimable. Typical approaches are to fix one element of $\boldsymbol{v}$ to 0 or to impose a sum-to-zero constraint; in Stan, the `sum_to_zero_vector` parameter type makes implementing the latter approach trivial.
+
+The provided JS Stan programs on GitHub accommodate both entry processes where an indicator is supplied as data to use the Dirichlet (`dirichlet = 1`) or logistic-normal (`dirichlet = 0`) as a prior for the entry process. For the simulations conducted for SBC, the logistic-normal was used as it is considerably faster.
+
+### Accommodating unequal intervals in the entry process
+
+A novel contribution of this manuscript is to accommodate unequal survey intervals into the entry process. Analogous to how mortality rates are multiplied by the survey intervals, the intervals can also be incorporated into expectations of the entry process, where for the Dirichlet we can model the concentration vector as multiplied by the survey interval:
+
+$$
+\begin{aligned}
+  \boldsymbol{\beta} &\sim \mathrm{Dirichlet} \left( \boldsymbol{\alpha} \right) \\
+  \alpha_1 &= \mu\gamma \\
+  \alpha_j &= \mu\tau_{j-1}, &\quad  j \in \{2, \dots, J\}
+\end{aligned}
+$$ {#eq-dir}
+
+Here, $\mu$ controls the overall concentration (or "entry rate" per unit of the survey interval length) of the Dirichlet prior, while the relative weights of $\alpha_j$ are determined by the survey intervals $\tau_j$. The parameter $\gamma$ scales $\mu$ for the first survey, as this entry occasion has no associated time interval. The parameterisation is most interpretable when $\boldsymbol{\tau}$ has been scaled to have geometric mean of 1 (Box 1). In that case, when $\gamma > 1$, the starting population is large relative to the super-population, and vice versa when $\gamma < 1$.  
+
+The logistic-normal case can be written as follows, where I use the same parameters as in the Dirichlet model for the corresponding distribution components, where in this case the covariance matrix $\Sigma$ is a diagonal matrix with $\mu$ for each diagonal entry:
+
+$$
+\begin{aligned}
+  \boldsymbol{\beta} &= \frac{e^{\boldsymbol{v}}}{\sum_{j=1}^J e^{v_j}} \\
+  \boldsymbol{v} &\sim \mathrm{Normal} \left( \log \boldsymbol{\alpha}, \mu \boldsymbol{I}_J \right), &\quad \sum_{j = 1}^J v_j = 0 \\
+  \alpha_1 &= \gamma \\
+  \alpha_j &= \tau_{j - 1}, &\quad j \in \{2, \dots, J\}
+\end{aligned}
+$$ {#eq-ln}
+
+Both approaches are shown in the accompanying Stan programs, but the logistic-normal is generally considerably faster.
+
+
+Equations #eq-dir and #eq-ln show how the covariance of the Dirichlet prior is determined by $\mu$ whereas in the logistic-normal that corresponding covariance matrix may be considered restrictive. In the *Mixophyes fleayi* case study, 
+
+Since only the random part of $\boldsymbol{v}$ needs an identifiability constraint, in Stan we can use a `sum_to_zero_vector`.
+
+Applying the approach for unequal intervals to a dataset of endangered Houston toads [@duarte2011] yielded better expected log predictive density (ELPD, `loo::loo_compare()`) by 3 standard errors and produced markedly more realistic entry probabilities and derived population sizes (@fig-toad). 
+
+### Multistate and multievent JS models
+
+Multistate and especially multievent JS models are computationally demanding because the marginalisation now also needs to include the various possible entry states. Unlike multistate CJS models, where we condition on first capture and assume states are perfectly observed, in multistate JS models we do not know the entry occasion, and thus also not the state at the time of entry. For example, in a multistate model with $S = 3$ the likelihood for individual first captured on $j = 4$ requires marginalising over 4 possible entry occasions with 3 different entry states each, requiring some part of the likelihood computations to be performed 12 times. The entry process computations can be pre-computed in the absence of individual effects, greatly increasing speed. Multievent models, which incorporate no certain states by which to factor the different likelihood terms, require the log likelihoods for the individual's entire detection vector to be computed for all possible entry occasions and entry states. Such models may become prohibitively expensive to compute for large datasets, though given that the likelihood terms are computed for each individual, Stan's within-chain parallelisation options will be beneficial to share likelihood computations across cores. Again, preliminary model runs without individual effects will offer great efficiency gains to determine the required number of augmented individuals before running full models with all desired effects.
+
+```{r}
+options(scipen = 999, digits = 2)
+library(here)
+library(readr)
+library(dplyr)
+library(tidybayes)
+stan_data <- readRDS(here("examples/data/fleayi-stan-data.rds"))
+fit <- read_rds(here("examples/fit.rds"))
+rho <- fit |> 
+  spread_rvars(gp_rho[i, j]) |> 
+  filter(i == 1, j == 5) |> 
+  median_hdci(gp_rho)
+```
+
+As a case study, I fitted a robust design multistate JS model to a dataset of Fleay's barred frogs (*Mixophyes fleayi*), an endangered Australian frog for which the contemporary response to the pathogenic amphibian chytrid fungus (*Batrachochytrium dendrobatidis*, *Bd*) was originally assessed with a CJS model [@hollanders2023a]. The objective was to determine differential mortality rates between $S=2$ states, frogs uninfected and infected with the fungus, and data were collected from `r sum(stan_data$I)` frogs at `r stan_data$M` sites (Brindle, Tuntable, and Bat Cave Creeks) across `r max(stan_data$J)` primary occasions (with 2--3 secondaries per primary) spanning 4 years, yielding `r sum(stan_data$y > 0)` total detections. Only males were included in the current analysis due to the paucity of female recaptures. Site-level intercepts for mortality and transition rates and detection probabilities were modeled hierarchically using zero-sum random effects for identifiability [@ogle2020], and we assumed detection probabilities were not affected by infection status.
+
+A multivariate Gaussian processes (GP) was implemented to capture temporal heterogeneity in mortality (shared across uninfected and infected frogs), infection dynamics, detection probabilities, and entry probabilities (Box 1). To reduce model dimensionality, we parameterised the initial state probabilities as the stationary distribution from infection dynamics (@eq-eta). Normalising the GP realisations for the entry process results in a simplex and presents an alternative to the Dirichlet distribution, resulting in a logistic normal distribution where the covariance is determined by the GP kernel (see the Stan program on GitHub `examples/js-ms-rd-fleayi.stan`). We ran 8 chains for 500 iterations after 500 warm-up draws which was sufficient for convergence with \<1% divergent transitions, which took `r round(fit$time()$total / 60, 1)` mins on an M2 Macbook Pro. The analysis revealed that mortality rates between uninfected and infected individuals are similar, resulting in mostly stable population sizes over the study period despite peaks of infection during cooler months, although the Bat Cave Creek population appears to be declining (@fig-fleayi). Another result was that temporal mortality rates and entry rates were strongly positively correlated (`r rho$gp_rho`, 95% HDI `r rho$.lower`, `r rho$.upper`), perhaps indicating increased movement in warmer months, resulting in entries and exits from the population, where the increase in apparent mortality is driven by permanent emigration, not mortality (@fig-gp).
+
+## Case studies: Entries of endangered Houston toads
+
+Two example datasets were chosen to showcase the CMR implementations in Stan, using 
+
+### Endangered Houston toads
+
+I fit a JS model to a previously analysed dataset of endangered Houston toads [@duarte2011] with three different priors for the entry probabilities $\boldsymbol{\beta}$:
+
+  1.  Uniform Dirichlet prior, $\boldsymbol{\beta} \sim \mathrm{Dirichlet} \left( \boldsymbol{1} \right)$;
+  2.  Dirichlet prior with concentration parameter estimated, $\boldsymbol{\beta} \sim \mathrm{Dirichlet} \left( \mu\boldsymbol{1} \right)$, where $\mu$ was given a  $\mathrm{Gamma} \left(1, 1)\right)$ prior;
+  3.  The same as (2) but with unequal intervals incorporated (@eq-dir).
+  
+I compared models using expected log predictive density (ELPD) as implemented in the loo R package [@vehtari2024]. The uniform Dirichlet prior performed considerably worse, with ELPD being \>3 standard errors lower. Model (3) incorporating interval lengths had the highest ELPD, but not significantly compared to model (2), which only estimated a concentration parameter. Because the entry probabilities were a "sparse simplex" Both models (2) and (3) 
+
+
+
+## 
+
+Applying the approach for unequal intervals to a dataset of endangered Houston toads [@duarte2011] yielded better expected log predictive density (ELPD, `loo::loo_compare()`) by 3 standard errors and produced markedly more realistic entry probabilities and derived population sizes (@fig-toad). 
+
+\newpage
+
+# Discussion
+
+A range of CMR models were reviewed with efficient implementations of all types provided in Stan. As gradient-based MCMC methods demand discrete parameters are marginalised from the models, these state-of-the-art sampling algorithms remained largely inaccessible for complex ecological models to most practitioners. Moreover, in order to recover posterior distributions of latent discrete parameters to estimate quantities like population size, the forward-backward sampling algorithm is required in addition to the likelihood computation. This contribution provides functions for computing the log likelihoods and recovering latent quantities for a range of models. Since these models are implementations of hidden Markov models which are statistically equivalent to other ecological models such as dynamic occupancy models [@mcclintock2020], these functions can readily be modified for a range of other applications.
+
+Since many CMR models can be factored as product multinomials by conditioning on first and last detections, some likelihood terms can be shared across individuals in the absence of individual-level effects. This greatly reduces computational burden, especially for JS models with data-augmentation where the likelihood of an augmented individual need only be computed once. The factorisability of the likelihood is reduced with the more complex model variants such as multistate and especially multievent, as capture events can no longer be associated with fixed underlying ecological states. In JS models with categorical predictors, there are addditional complications, where the likelihood terms of augmented individuals have to be computed for the combinatorics of possible categorical states. With sex, for instance, augmented individual likelihoods have to be computed for males and females and then weighted according to the sex ratio, which may itself be a parameter to be estimated.
+
+Unequal survey intervals have typically only been accounted for in the survival and multistate transition processes. In the simplest single state models, exponentiating the survival probability by the survey interval is sufficient, but this approach does not work for multistate models [@glennie2023]. Therefore, a more general approach is to multiply the hazard rates (or generator matrix in multistate) by the survey interval followed by taking the (matrix) exponential to produce survival and transition probabilities, respectively. This paper further extends this idea to the entry process, where longer survey intervals are expected to produce relatively more entries to the population. Implementing the approach described herein produces considerably different latent population sizes and entry probabilities, with higher ELPD via LOO-CV model comparison, highlighting the importance of accommodating varying survey intervals (@fig-toad). 
+
+Despite statistical advances in estimating wild animal population sizes, methods relying on unmarked populations are highly sensitive to model assumptions [@barker2018; @gilbert2021], cementing CMR as the de facto method for estimating demographic processes in animals. Advances in Bayesian computational methods now rely on gradient-based MCMC methods, which require the marginal likelihoods to be fitted. Fittingly, these same marginal likelihood constructions were used in the frequentist paradigm that has dominated the CMR literature. This manuscript bridges the gap between cutting edge Bayesian model fitting and fundamental ecological statistical methods.
+
+\newpage
+
+# Acknowledgements 
+
+I am grateful to Dalton Hance for efficiently computing the probbility of no more observations after last capture ($\chi$), Bob Carpenter to providing guidance on accounting for unequal survey intervals in the entry process, Marc Kéry to feedback on the manuscript, and Ben Augustine for helpful discussions.
+  
+# Data Availability 
+  
+All code, data, and simulations are provided on [github.com/mhollanders/cmr-in-stan](https://github.com/mhollanders/cmr-in-stan.git).
+
+# References
+
+::: {#refs}
+:::
+
+\newpage
+
+# Box 1: Prior distributions for CMR parameters
+
+Bayesian analysis aims to quantify the posterior distribution of model parameters ($\theta$) given the data ($y$), $\pi \left( \theta \mid y \right)$, which is proportional to the product of the prior distribution $\pi \left(\theta\right)$ and the likelihood $\pi \left( y \mid \theta \right)$. Prior distributions need to be specified for all top-level parameters and should be consistent with our existing beliefs about the system under study. Ideally, these priors are *weakly informative*: broad enough not to dominate the posterior, while still ruling out completely implausible values. 
+
+In basic CJS models, mortality rates can be given $\mathrm{Gamma} \left(1, 1 \right)$ priors, which are uniform on $[0, 1]$ on the probability scale; however, their appropriateness depends on the chosen survey interval. For example, this prior would be implausible for a long-lived species sampled with monthly surveys, as the prior expected annual survival would be $\exp \left(-1 \cdot 12\right) \approx 0.0001$. Detection probabilities can be given diffuse Beta priors, where $\mathrm{Beta} \left(1, 1\right)$ is uniform on $[0,1]$. Fixed effect coefficients for mortality, transition, and entry rates (log-link) and detection probabilities (logit-link) can often be given $\mathrm{Normal} \left( 0, \sigma \right)$ priors, for example with $\sigma = 1$ when covariates are appropriately scaled. Larger values of $\sigma$ place increasing prior mass on values close to 0 and on very large values (for rates) or close to 1 (for probabilities).
+
+In multistate models, the survey frequency should be chosen so that state transitions are rare relative to the survey intervals. This ensures the *snapshot property*---that the system is effectively static during each survey interval---and we can follow the rule of thumb proposed by @glennie2023: the mean survey interval should be shorter than the smallest expected dwell time, defined as the reciprocal of the largest transition rate:
+
+$$
+\bar{\tau} \leq \frac{1}{\max\left(\boldsymbol{q}\right)}.
+$$ {#eq-snap}
+
+Therefore, the priors for transition rates $\boldsymbol{q}$ should concentrate most of their mass below $1/\bar{\tau}$, assuming survey intervals are ecologically informed. If $\bar{\tau} = 1$, or when survey intervals are rescaled to have mean 1 before model fitting by dividing by the geometric mean, 
+
+$$
+\boldsymbol{\tau'} = \frac{\boldsymbol{\tau}}{\exp \left(\sum_{j=1}^{J - 1} \log \tau_j \right)}
+$$ {#eq-tau}
+
+then e.g. $\mathrm{Gamma} \left(1, 3\right)$ and $\mathrm{Gamma} \left(2, 5\right)$ both place approximately 95% of the prior mass in the range satisfying the snapshot property, with the former prior more strongly favouring infrequent transitions. The same scaling simplifies prior choice for JS models, where entry probabilities $\boldsymbol{\beta} \sim \mathrm{Dirichlet} \left( \boldsymbol{\alpha} \right)$ can be parameterised as $\alpha_1 = a$ and $\alpha_j = \mu \tau_{j - 1}, j > 1$. Choosing $\mu \sim \mathrm{Gamma} \left(1, \bar{\tau} \right)$ and $a = 1$ produces a uniform prior for $\boldsymbol{\beta}$ scaled by the survey intervals on the original scale, while $\mathrm{Gamma} \left(1, 1 \right)$ is the natural default with scaled $\boldsymbol{\tau'}$. Setting $a = 1$ may be overly informative in some cases, and placing an independent prior on $\alpha_1$ and treating it as a parameter to be estimated may be useful. When modeling $\boldsymbol{\beta}$ with a logistic normal distribution, we define $\beta_j = \frac{e^{u_j}}{\sum_j^J e^{u_j}}$ where $\boldsymbol{u} \sim \mathrm{Normal} \left( \boldsymbol{0}, \Sigma \right)$
+
+Temporal variation in model parameters not captured by covariates can be modeled in various ways, with partial pooling using random effects (i.e., log- or logit-normal effects) being a principled choice. This contrasts with the existing maximum likelihood implementations, where the Bayesian analogue would be independent priors for each survey. A useful default prior for temporal parameters is a Gaussian process (GP) prior, for example with exponentiated quadratic kernel where the covariance between two temporal realisations for a parameter is given by
+
+$$
+K\left(\boldsymbol{\tau} \mid \sigma, \rho \right)_{jj'} = \sigma^2 \exp \left( -\frac{\left( \tau_j - \tau_{j'} \right)^2}{2 \rho ^2} \right),
+\tag{2}
+$$ {#eq-gp}
+
+where $\sigma$ is the marginal standard deviation of the random effect (analogous to conventional Gaussian random effects) and $\rho$ is the length-scale, which captures the degree to which parameters are temporally correlated. Beyond enabling partial pooling across surveys, this prior explicitly models temporal structure in parameters. To capture temporal variation jointly in multiple model parameters (e.g., mortality and transition rates), a multivariate Gaussian process can be implemented---an approach demonstrated in the *Mixophyes fleayi* case study. The Stan language contains many functions that facilitate these priors easily.
+
+\newpage
+
+# Figure Captions
+
+Figure 1: Entry probabilities ($\boldsymbol{\beta}$) and population sizes ($\boldsymbol{N}$) of Houston toads from Jolly-Seber models with and without the accommodation of unequal survey intervals (summarised with posterior medians and 95% HDIs). In the traditional approach we provided a uniform prior over the entry probabilities as $\boldsymbol{\beta} \sim \mathrm{Dirichlet} \left( \boldsymbol{1} \right)$. The new parameterisation had an expected log predictive density (ELPD) that was 3 standard errors higher than the alternative model. Data from @duarte2011.
+
+Figure 2: Fleay's barred frog (*Mixophyes fleayi*) population sizes and infection prevalence, computed as the proportion of individuals estimated to be infected with *Bd*, derived with forward-backward sampling of latent states (summarised with posterior medians and 95% HDIs). Data from @hollanders2023a.
+
+Figure 3: Multivariate Gaussian process (GP) realisations for each model parameter (summarised with posterior medians and 95% HDIs). A strong positive correlation between mortality and entry rates (`r rho$gp_rho`, 95% HDI `r rho$.lower`, `r rho$.upper`) may suggest increased apparent mortality is indicative of dispersal, leading to permanent emigration.
+
+
+# Figures
+
+![](../figs/fig-toad.jpg){#fig-toad fig-pos='H'}
+
+\newpage
+
+![](../figs/fig-fleayi.jpg){#fig-fleayi fig-pos='H'}
+
+\newpage
+
+![](../figs/fig-gp.jpg){#fig-gp fig-pos='H'}
